@@ -165,8 +165,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
     
+    // Check if the title contains a URL
+    const urlPattern = /^(https?:\/\/[^\s]+)$/;
+    let titleHtml;
+    
+    if (urlPattern.test(rowTitle)) {
+      // If the title is a URL, make it a hyperlink
+      titleHtml = `<a href="${escapeHtml(rowTitle)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>`;
+    } else {
+      // Otherwise, display as plain text
+      titleHtml = escapeHtml(rowTitle);
+    }
+    
     header.innerHTML = `
-      <span class="accordion-title">${escapeHtml(rowTitle)}</span>
+      <span class="accordion-title">${titleHtml}</span>
       <i class="fas fa-chevron-down accordion-icon"></i>
     `;
     
@@ -193,7 +205,14 @@ document.addEventListener('DOMContentLoaded', function() {
     content.innerHTML = contentHtml;
     
     // Set up click handler
-    header.addEventListener('click', function() {
+    header.addEventListener('click', function(e) {
+      // Check if the click was on a hyperlink
+      if (e.target.tagName === 'A') {
+        // If it was a link click, let the default action occur and don't toggle
+        return;
+      }
+      
+      // Otherwise toggle the accordion
       toggleAccordion(content, this.querySelector('.accordion-icon'));
     });
     

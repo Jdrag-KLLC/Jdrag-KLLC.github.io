@@ -165,20 +165,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
     
-    // Check if the title contains a URL
-    const urlPattern = /^(https?:\/\/[^\s]+)$/;
-    let titleHtml;
+    // Extract URL if present in title or content
+    const urlField = sheetData.headers.includes('URL') ? 'URL' : 
+                     sheetData.headers.includes('Link') ? 'Link' : null;
     
-    if (urlPattern.test(rowTitle)) {
-      // If the title is a URL, make it a hyperlink
-      titleHtml = `<a href="${escapeHtml(rowTitle)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>`;
+    // URL from dedicated field or extract from title
+    let url = null;
+    if (urlField && row[urlField]) {
+      url = row[urlField];
     } else {
-      // Otherwise, display as plain text
-      titleHtml = escapeHtml(rowTitle);
+      // Try to extract URL from title if it contains a URL
+      const urlMatches = rowTitle.match(/(https?:\/\/[^\s]+)/);
+      if (urlMatches) {
+        url = urlMatches[0];
+      }
+    }
+    
+    // Create the title element
+    let titleContent;
+    if (url) {
+      // If we have a URL, make the title clickable
+      titleContent = `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>`;
+    } else {
+      // No URL, just show the title
+      titleContent = escapeHtml(rowTitle);
     }
     
     header.innerHTML = `
-      <span class="accordion-title">${titleHtml}</span>
+      <span class="accordion-title">${titleContent}</span>
       <i class="fas fa-chevron-down accordion-icon"></i>
     `;
     
@@ -208,7 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
     header.addEventListener('click', function(e) {
       // Check if the click was on a hyperlink
       if (e.target.tagName === 'A') {
-        // If it was a link click, let the default action occur and don't toggle
+        // If it's a link, let the browser handle the click (don't toggle)
+        e.stopPropagation();
         return;
       }
       

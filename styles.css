@@ -257,11 +257,33 @@ header p {
   font-weight: 500;
   font-size: 16px;
   color: var(--text-color);
+  /* Added flex to allow title to expand properly */
+  display: flex;
+  flex: 1;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Added styles for title links */
+.title-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  /* Make sure links don't inherit accordion header cursor */
+  cursor: pointer;
+  /* For better mobile experience, add some tap area */
+  padding: 4px 0;
+}
+
+.title-link:hover {
+  text-decoration: underline;
 }
 
 .accordion-icon {
   color: var(--text-secondary);
   transition: transform 0.3s;
+  /* Added margin to separate from title */
+  margin-left: 12px;
 }
 
 .accordion-content {

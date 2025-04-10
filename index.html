@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheet Data Viewer</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-database"></i> Google Sheet Data Viewer</h1>
+      <p>Interactive viewer for your spreadsheet data</p>
+      
+      <div id="api-key-container">
+        <div class="input-group">
+          <input type="text" id="sheet-id" placeholder="Paste your Google Sheet ID here" class="input-control">
+          <button id="connect-btn" class="btn primary-btn">Connect</button>
+        </div>
+        <p class="helper-text">Find your Sheet ID in the URL: https://docs.google.com/spreadsheets/d/<strong>YOUR-SHEET-ID-HERE</strong>/edit</p>
+      </div>
+    </header>
+
+    <div id="search-container" class="search-container" style="display: none;">
+      <div class="search-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <input 
+        type="text" 
+        id="search-input" 
+        placeholder="Search in any field..." 
+        class="search-input"
+      >
+      <div id="ai-search" class="ai-search-btn">
+        <i class="fas fa-robot"></i>
+        <span>AI Search</span>
+      </div>
+    </div>
+    
+    <div id="results-count" class="results-count" style="display: none;">Showing 0 items</div>
+    
+    <div id="loading" class="loading-container" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Loading data from Google Sheets...</p>
+    </div>
+    
+    <div id="error-message" class="error-container" style="display: none;">
+      <i class="fas fa-exclamation-circle"></i>
+      <p id="error-text"></p>
+    </div>
+    
+    <div id="accordion-container" class="accordion-container"></div>
+    
+    <div id="ai-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2><i class="fas fa-robot"></i> AI-Powered Search</h2>
+        <p>Describe what you're looking for in natural language:</p>
+        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Show me all high priority items related to frontend development'"></textarea>
+        <div class="modal-footer">
+          <button id="run-ai-search" class="btn primary-btn">Search</button>
+        </div>
+        <div id="ai-results" class="ai-results" style="display: none;">
+          <h3>AI Search Results</h3>
+          <div id="ai-results-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
+</body>
+</html>

@@ -51,16 +51,18 @@
       <p id="error-text"></p>
     </div>
     
-    <!-- New two-column layout -->
-    <div id="content-wrapper">
-      <!-- Left side: Scrollable Titles -->
-      <div id="titles-container" class="titles-container"></div>
-      <!-- Right side: Detail view with PDF dropdown -->
-      <div id="detail-content" class="detail-content">
+    <!-- Two-Panel Layout: Left titles and Right detail view -->
+    <div id="content-wrapper" style="display: flex; flex-direction: row; gap: 16px; margin-top: 16px;">
+      <!-- Left side: Scrollable list of titles -->
+      <div id="titles-container" class="titles-container" style="width: 300px; max-height: 70vh; overflow-y: auto; border-right: 1px solid var(--border-color); padding-right: 8px;"></div>
+      <!-- Right side: Detail view (opens to the right) with dropdown Google Form -->
+      <div id="detail-content" class="detail-content" style="flex: 1; padding-left: 16px;">
          <div class="pdf-dropdown">
            <div class="dropdown-header">Input pdf's <i class="fas fa-chevron-down"></i></div>
            <div class="dropdown-content" style="display: none;">
-             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="640" height="830" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="640" height="830" frameborder="0" marginheight="0" marginwidth="0">
+             Loading…
+             </iframe>
            </div>
          </div>
          <!-- This div is updated with the details of the selected title -->

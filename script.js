@@ -465,11 +465,17 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const data = await response.json();
       
-      // Assume the API returns an array of candidates and display the first candidate's output.
-      if (data.candidates && data.candidates.length) {
-        aiResultsContent.innerHTML = `<p>${data.candidates[0].output}</p>`;
+      // Fixed: Extract text content from Gemini API response
+      if (data.candidates && data.candidates.length > 0 && 
+          data.candidates[0].content && 
+          data.candidates[0].content.parts && 
+          data.candidates[0].content.parts.length > 0) {
+        
+        const responseText = data.candidates[0].content.parts[0].text;
+        aiResultsContent.innerHTML = `<p>${responseText}</p>`;
       } else {
-        aiResultsContent.innerHTML = '<p>No response received from API.</p>';
+        aiResultsContent.innerHTML = '<p>No response text received from API.</p>';
+        console.error('Unexpected API response structure:', data);
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);

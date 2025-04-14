@@ -52,9 +52,9 @@
     </div>
     
     <!-- Two-panel layout: Left side for titles, right side for detail view -->
-    <div id="content-wrapper" style="display: flex; flex-direction: row; gap: 16px; margin-top: 16px;">
-      <!-- Left Panel: Scrollable Titles List -->
-      <div id="titles-container" class="titles-container" style="width: 300px; max-height: 70vh; overflow-y: auto; border-right: 1px solid var(--border-color); padding-right: 8px;">
+    <div id="content-wrapper" style="display: flex; flex-direction: row; gap: 16px; margin-top: 16px; align-items: stretch;">
+      <!-- Left Panel: Scrollable Titles List (flexible height) -->
+      <div id="titles-container" class="titles-container" style="width: 300px; overflow-y: auto; border-right: 1px solid var(--border-color); padding-right: 8px;">
         <!-- Titles will be dynamically inserted here -->
       </div>
       <!-- Right Panel: Detail View with PDF Dropdown -->

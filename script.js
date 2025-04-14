@@ -1,7 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // DOM elements
+  // DOM elements for Sheet integration and Chatbot API key input
   const sheetIdInput = document.getElementById('sheet-id');
   const connectBtn = document.getElementById('connect-btn');
+  const chatbotApiKeyInput = document.getElementById('chatbot-api-key');
+
+  // Other existing DOM elements
   const apiKeyContainer = document.getElementById('api-key-container');
   const searchContainer = document.getElementById('search-container');
   const searchInput = document.getElementById('search-input');
@@ -9,7 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const loadingElement = document.getElementById('loading');
   const errorElement = document.getElementById('error-message');
   const errorTextElement = document.getElementById('error-text');
-  // Layout containers
   const titlesContainer = document.getElementById('titles-container');
   const detailData = document.getElementById('detail-data');
   const aiSearchBtn = document.getElementById('ai-search');
@@ -21,21 +23,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const aiResultsContent = document.getElementById('ai-results-content');
   const formIframe = document.querySelector('.pdf-dropdown iframe');
 
-  // App state
+  // App state for Sheet Data
   let sheetData = {
     headers: [],
     data: []
   };
-  
+
   let currentSelectedRow = null;
-  
-  // Event listeners
+
+  // Event listeners for the main functions
   connectBtn.addEventListener('click', connectToSheet);
   searchInput.addEventListener('input', renderFilteredData);
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
-  
+
   // Toggle PDF dropdown in the detail view
   const pdfDropdownHeader = document.querySelector('.pdf-dropdown .dropdown-header');
   const pdfDropdownContent = document.querySelector('.pdf-dropdown .dropdown-content');
@@ -53,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 1000); // Give the iframe some time to fully load
     }
   });
-  
-  // Listen for iframe load event to ensure it's ready
+
+  // Listen for iframe load event to ensure it's ready for population
   if (formIframe) {
     formIframe.addEventListener('load', function() {
       if (currentSelectedRow) {
@@ -62,18 +64,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
-  // Close modal when clicking outside
+
+  // Close modal when clicking outside of it
   window.addEventListener('click', function(event) {
     if (event.target === aiModal) {
       closeAiModal();
     }
   });
 
-  // Functions
+  // Connect to Google Sheet function
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
-    
     if (!sheetId) {
       showError('Please enter a valid Google Sheet ID');
       return;
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
       titlesContainer.innerHTML = '';
       detailData.innerHTML = '';
       
-      // Fetch data from Google Sheet
+      // Build the URL to fetch data from the published sheet
       const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
       
       const response = await fetch(sheetUrl);
@@ -103,16 +104,16 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const jsonData = JSON.parse(jsonText[1]);
       
-      // Process the data
+      // Process and store the sheet data
       processSheetData(jsonData);
       
-      // Hide loading, show search and content
+      // Hide loading indicator, then update UI to display search and results
       loadingElement.style.display = 'none';
       apiKeyContainer.style.display = 'none';
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
       
-      // Render the data in the titles (left panel)
+      // Render the list of titles on the left panel
       renderFilteredData();
       
     } catch (error) {
@@ -121,7 +122,8 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Error connecting to sheet:', error);
     }
   }
-  
+
+  // Process the Google Sheet JSON data and update sheetData
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
@@ -141,7 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     sheetData = { headers, data };
   }
-  
+
+  // Filter and display data based on the search term
   function renderFilteredData() {
     const searchTerm = searchInput?.value?.toLowerCase() || '';
     
@@ -154,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     resultsCount.textContent = `Showing ${filteredData.length} of ${sheetData.data.length} items`;
     
-    // Clear the titles container
+    // Clear and rebuild the titles list
     titlesContainer.innerHTML = '';
     
     if (filteredData.length === 0) {
@@ -165,20 +168,20 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   }
-  
+
+  // Create each title item in the list
   function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
     
-    // Determine row title (using 'Title' field if available)
+    // Use 'Title' field if available or fallback to the first header field
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
     
-    // Check if there's a URL (from 'URL' or 'Link') and make clickable if so
+    // Determine if there's a URL associated with the title and make it clickable if so
     const urlField = sheetData.headers.includes('URL') ? 'URL' : 
                      sheetData.headers.includes('Link') ? 'Link' : null;
     let url = null;
-    
     if (urlField && row[urlField]) {
       url = row[urlField];
     } else {
@@ -194,32 +197,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     titleItem.innerHTML = `<span class="title-text">${titleContent}</span> <i class="fas fa-chevron-right title-icon"></i>`;
     
-    // When clicked, update the detail view (right panel) with the row's details
+    // When an item is clicked, update the detail view with row details
     titleItem.addEventListener('click', function(e) {
       if (e.target.tagName === 'A') return;
       
-      // Update current selected row for form auto-filling
+      // Set the current row to allow form population
       currentSelectedRow = row;
       
       detailData.innerHTML = generateDetailContent(row);
       
-      // Visual feedback for selected item
+      // Visual feedback for the selected item
       document.querySelectorAll('.title-item').forEach(item => {
         item.classList.remove('active');
       });
       titleItem.classList.add('active');
       
-      // If the form is already visible, try to populate it
+      // If the form dropdown is open, try populating the Google Form
       if (pdfDropdownContent.style.display !== 'none' && formIframe) {
         setTimeout(() => {
           populateGoogleForm(row);
-        }, 500); // Small delay to ensure DOM is updated
+        }, 500);
       }
     });
     
     return titleItem;
   }
-  
+
+  // Generate the HTML for the detail view based on a row's data
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
@@ -231,7 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '</div>';
     return html;
   }
-  
+
+  // Render fields with special formatting, like URLs or priority tags
   function renderSpecialFields(header, value) {
     if (!value) return '';
     
@@ -267,42 +272,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     return escapeHtml(valueStr);
   }
-  
+
+  // Populate the Google Form embedded via an iframe with data from the selected row
   function populateGoogleForm(row) {
-    // Skip if no form iframe is present
     if (!formIframe) return;
     
     try {
-      // Attempt to access the iframe content
       const iframeDoc = formIframe.contentDocument || formIframe.contentWindow.document;
       
-      // Check if we have access to the iframe (might be restricted by cross-origin policy)
       if (!iframeDoc) {
         console.warn('Cannot access iframe content due to cross-origin policy.');
-        
-        // For Google Forms, we can try URL parameters approach as a fallback
         tryGoogleFormsURLParameters(row);
         return;
       }
       
-      // Find all form inputs, textareas, and selects in the iframe
       const inputs = iframeDoc.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
-      
       inputs.forEach(input => {
-        // Try to identify the field name from various attributes or surrounding label
         const fieldName = getFieldName(input, iframeDoc);
         if (!fieldName) return;
-        
-        // Look for matching data in our row
         const matchingData = findMatchingData(fieldName, row);
         if (matchingData) {
-          // Set the value based on the input type
           if (input.tagName === 'SELECT') {
-            // For select elements, we need to find the matching option
             setSelectValue(input, matchingData);
           } else {
             input.value = matchingData;
-            // Trigger input event to ensure any listeners are notified
             const event = new Event('input', { bubbles: true });
             input.dispatchEvent(event);
           }
@@ -314,16 +307,11 @@ document.addEventListener('DOMContentLoaded', function() {
       radioButtons.forEach(radio => {
         const fieldName = getFieldName(radio, iframeDoc);
         if (!fieldName) return;
-        
         const matchingData = findMatchingData(fieldName, row);
         if (matchingData) {
           const radioValue = radio.value.toLowerCase();
           const matchingValue = String(matchingData).toLowerCase();
-          
-          // Check if this option matches our data
-          if (radioValue === matchingValue || 
-              matchingValue.includes(radioValue) || 
-              radioValue.includes(matchingValue)) {
+          if (radioValue === matchingValue || matchingValue.includes(radioValue) || radioValue.includes(matchingValue)) {
             radio.checked = true;
             const event = new Event('change', { bubbles: true });
             radio.dispatchEvent(event);
@@ -333,99 +321,73 @@ document.addEventListener('DOMContentLoaded', function() {
       
     } catch (error) {
       console.error('Error while populating Google Form:', error);
-      // Try URL parameters as a fallback
       tryGoogleFormsURLParameters(row);
     }
   }
-  
+
+  // Try to determine a field's label from various HTML attributes
   function getFieldName(input, doc) {
-    // Try to get field name from various sources
-    
-    // 1. Check for aria-label
     if (input.getAttribute('aria-label')) {
       return input.getAttribute('aria-label').trim();
     }
-    
-    // 2. Check for name attribute
     if (input.name) {
       return input.name.replace(/entry\.\d+/, '').replace(/[-_]/g, ' ').trim();
     }
-    
-    // 3. Check for id and corresponding label
     if (input.id) {
       const label = doc.querySelector(`label[for="${input.id}"]`);
       if (label) {
         return label.textContent.trim();
       }
     }
-    
-    // 4. Look for parent or ancestor with question text
     let element = input.parentElement;
     while (element && element.tagName !== 'FORM') {
-      // Check for question text in this element
       const questionElement = element.querySelector('.freebirdFormviewerComponentsQuestionBaseTitle');
       if (questionElement) {
         return questionElement.textContent.trim();
       }
-      
-      // Also check for any div with text that might be a label
       const possibleLabels = element.querySelectorAll('div');
       for (const div of possibleLabels) {
         if (div.textContent && div.textContent.length > 0 && div.textContent.length < 100) {
           return div.textContent.trim();
         }
       }
-      
       element = element.parentElement;
     }
-    
     return null;
   }
-  
+
+  // Find matching data in the row for a given field name
   function findMatchingData(fieldName, row) {
-    // Normalize the field name
     const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
-    
-    // Look for exact matches first
     for (const [key, value] of Object.entries(row)) {
       if (key.toLowerCase() === normalizedFieldName) {
         return value;
       }
     }
-    
-    // Then look for partial matches
     for (const [key, value] of Object.entries(row)) {
       const normalizedKey = key.toLowerCase().replace(/[-_\s]+/g, '');
-      
       if (normalizedKey.includes(normalizedFieldName) || normalizedFieldName.includes(normalizedKey)) {
         return value;
       }
     }
-    
     return null;
   }
-  
+
+  // Set the value of a select element based on matching text or value
   function setSelectValue(selectElement, value) {
     const options = selectElement.options;
     const valueString = String(value).toLowerCase();
-    
-    // First try exact match
     for (let i = 0; i < options.length; i++) {
-      if (options[i].value.toLowerCase() === valueString || 
-          options[i].text.toLowerCase() === valueString) {
+      if (options[i].value.toLowerCase() === valueString || options[i].text.toLowerCase() === valueString) {
         selectElement.selectedIndex = i;
         const event = new Event('change', { bubbles: true });
         selectElement.dispatchEvent(event);
         return;
       }
     }
-    
-    // Then try partial match
     for (let i = 0; i < options.length; i++) {
-      if (options[i].value.toLowerCase().includes(valueString) || 
-          valueString.includes(options[i].value.toLowerCase()) ||
-          options[i].text.toLowerCase().includes(valueString) || 
-          valueString.includes(options[i].text.toLowerCase())) {
+      if (options[i].value.toLowerCase().includes(valueString) || valueString.includes(options[i].value.toLowerCase()) ||
+          options[i].text.toLowerCase().includes(valueString) || valueString.includes(options[i].text.toLowerCase())) {
         selectElement.selectedIndex = i;
         const event = new Event('change', { bubbles: true });
         selectElement.dispatchEvent(event);
@@ -433,118 +395,84 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }
-  
+
+  // Fallback method using URL parameters for Google Forms
   function tryGoogleFormsURLParameters(row) {
-    // This is a fallback method for Google Forms using URL parameters
-    // Google Forms accept prefilled values via URL parameters
-    
-    // Check if we're dealing with a Google Form
     if (!formIframe.src.includes('docs.google.com/forms')) {
       return;
     }
-    
-    // Start with the base URL of the form
     const formUrl = new URL(formIframe.src);
     const baseUrl = formUrl.origin + formUrl.pathname;
-    
-    // We need to manually observe the form to extract entry IDs
-    // For demonstration, we'll just add a message to notify the user
-    console.log('Cross-origin restrictions prevent direct form population. Consider implementing the Google Forms prefill URL approach if needed.');
-    
-    // An actual implementation would require:
-    // 1. Knowing the form entry IDs (which follow pattern 'entry.12345678')
-    // 2. Mapping your data fields to these entry IDs
-    // 3. Creating a new URL with these parameters and updating the iframe src
-    
-    // This is just a placeholder for where you'd implement that logic:
+    console.log('Cross-origin restrictions prevent direct form population. Consider using Google Forms prefill URL parameters.');
+    // Placeholder logic: Map your data fields to form entry IDs and update the iframe src.
     /*
     const prefillParams = new URLSearchParams();
-    
-    // Example mapping (you would need the actual entry IDs):
-    // prefillParams.append('entry.123456789', row['Title']);
-    // prefillParams.append('entry.987654321', row['Description']);
-    
+    prefillParams.append('entry.123456789', row['Title']);
+    prefillParams.append('entry.987654321', row['Description']);
     const prefillUrl = `${baseUrl}?${prefillParams.toString()}`;
     formIframe.src = prefillUrl;
     */
   }
-  
+
+  // Display error messages in the UI
   function showError(message) {
     errorTextElement.textContent = message;
     errorElement.style.display = 'flex';
   }
-  
+
+  // Open the AI search modal
   function openAiModal() {
     aiModal.style.display = 'block';
     aiPromptInput.focus();
     aiResults.style.display = 'none';
   }
-  
+
+  // Close the AI search modal
   function closeAiModal() {
     aiModal.style.display = 'none';
   }
-  
-  function performAiSearch() {
+
+  // Updated function to perform an actual AI search via the chatbot endpoint using the user-supplied API key
+  async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
-    simulateAiSearch(aiPrompt);
-  }
-  
-  function simulateAiSearch(prompt) {
+    
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
     
-    setTimeout(() => {
-      const lowercasePrompt = prompt.toLowerCase();
-      let matchedData = [];
+    // Retrieve the API key provided by the user
+    const userApiKey = chatbotApiKeyInput.value.trim();
+    if (!userApiKey) {
+      aiResultsContent.innerHTML = '<p>Please provide your Chatbot API key.</p>';
+      return;
+    }
+    
+    try {
+      // Replace this with your actual chatbot API endpoint URL
+      const apiUrl = 'https://your-chatbot-endpoint.com/api/query';
       
-      if (lowercasePrompt.includes('high priority')) {
-        matchedData = sheetData.data.filter(row => {
-          const priority = row['Priority']?.toLowerCase() || '';
-          return priority.includes('high');
-        });
-      } else if (lowercasePrompt.includes('recent')) {
-        matchedData = [...sheetData.data].sort((a, b) => {
-          const dateA = new Date(a['Date'] || 0);
-          const dateB = new Date(b['Date'] || 0);
-          return dateB - dateA;
-        }).slice(0, 3);
-      } else {
-        const keywords = lowercasePrompt.split(' ');
-        matchedData = sheetData.data.filter(row => {
-          return keywords.some(keyword => 
-            Object.values(row).some(value => 
-              String(value).toLowerCase().includes(keyword)
-            )
-          );
-        });
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userApiKey}`
+        },
+        body: JSON.stringify({ prompt: aiPrompt })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
       }
       
-      if (matchedData.length === 0) {
-        aiResultsContent.innerHTML = '<p>No matching items found. Try a different query.</p>';
-      } else {
-        aiResultsContent.innerHTML = `<p>Found ${matchedData.length} items matching your query:</p>`;
-        
-        const resultsList = document.createElement('div');
-        resultsList.className = 'ai-results-list';
-        
-        matchedData.forEach((row, index) => {
-          const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
-          const resultItem = document.createElement('div');
-          resultItem.className = 'ai-result-item';
-          resultItem.innerHTML = `<p><strong>${index + 1}. ${escapeHtml(row[titleField] || 'Untitled')}</strong></p>`;
-          resultsList.appendChild(resultItem);
-        });
-        
-        aiResultsContent.appendChild(resultsList);
-        const aiNote = document.createElement('p');
-        aiNote.className = 'ai-note';
-        aiNote.innerHTML = '<small>Note: This is a simulated AI search. In the full implementation, this will use a more sophisticated AI to understand and process your query.</small>';
-        aiResultsContent.appendChild(aiNote);
-      }
-    }, 1000);
+      const data = await response.json();
+      aiResultsContent.innerHTML = `<p>${data.response}</p>`;
+    } catch (error) {
+      console.error('Error calling AI service:', error);
+      aiResultsContent.innerHTML = `<p>Error: ${error.message}. Please try again later.</p>`;
+    }
   }
-  
+
+  // Utility function to escape HTML special characters
   function escapeHtml(unsafe) {
     return unsafe
       .toString()

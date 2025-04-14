@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const loadingElement = document.getElementById('loading');
   const errorElement = document.getElementById('error-message');
   const errorTextElement = document.getElementById('error-text');
-  // Updated containers for new layout:
-  const titlesContainer = document.getElementById('titles-container'); // Left panel for titles
-  const detailData = document.getElementById('detail-data'); // Right panel for details
+  // Layout containers
+  const titlesContainer = document.getElementById('titles-container');
+  const detailData = document.getElementById('detail-data');
   const aiSearchBtn = document.getElementById('ai-search');
   const aiModal = document.getElementById('ai-modal');
   const closeModal = document.querySelector('.close-modal');
@@ -36,16 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Toggle PDF dropdown in the detail view
   const pdfDropdownHeader = document.querySelector('.pdf-dropdown .dropdown-header');
   const pdfDropdownContent = document.querySelector('.pdf-dropdown .dropdown-content');
-  pdfDropdownHeader.addEventListener('click', function(){
-    if(pdfDropdownContent.style.display === 'none'){
-      pdfDropdownContent.style.display = 'block';
-      this.querySelector('i').classList.remove('fa-chevron-down');
-      this.querySelector('i').classList.add('fa-chevron-up');
-    } else {
-      pdfDropdownContent.style.display = 'none';
-      this.querySelector('i').classList.remove('fa-chevron-up');
-      this.querySelector('i').classList.add('fa-chevron-down');
-    }
+  pdfDropdownHeader.addEventListener('click', function() {
+    const isVisible = pdfDropdownContent.style.display !== 'none';
+    pdfDropdownContent.style.display = isVisible ? 'none' : 'block';
+    const icon = this.querySelector('i');
+    icon.classList.toggle('fa-chevron-down', isVisible);
+    icon.classList.toggle('fa-chevron-up', !isVisible);
   });
   
   // Close modal when clicking outside
@@ -56,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Functions
-async function connectToSheet() {
+  async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
     
     if (!sheetId) {
@@ -72,7 +68,7 @@ async function connectToSheet() {
       detailData.innerHTML = '';
       
       // Fetch data from Google Sheet
-      const sheetUrl = https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned;
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
       
       const response = await fetch(sheetUrl);
       if (!response.ok) {
@@ -105,15 +101,14 @@ async function connectToSheet() {
       showError(error.message || 'Failed to connect to the Google Sheet');
       console.error('Error connecting to sheet:', error);
     }
-}
+  }
   
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
     }
     
-    const rows = jsonData.table.rows;
-    const cols = jsonData.table.cols;
+    const { rows, cols } = jsonData.table;
     const headers = cols.map(col => col.label || '');
     
     const data = rows.map(row => {
@@ -125,12 +120,7 @@ async function connectToSheet() {
       return rowData;
     });
     
-    sheetData = {
-      headers: headers,
-      data: data
-    };
-    
-    console.log('Processed data:', sheetData);
+    sheetData = { headers, data };
   }
   
   function renderFilteredData() {
@@ -157,8 +147,7 @@ async function connectToSheet() {
     }
   }
   
-  // Create a clickable title item for the left panel.
-  function createTitleItem(row, index) {
+  function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
     
@@ -166,10 +155,11 @@ async function connectToSheet() {
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
     
-    // Check if there's a URL (from 'URL' or 'Link') and make clickable if so.
+    // Check if there's a URL (from 'URL' or 'Link') and make clickable if so
     const urlField = sheetData.headers.includes('URL') ? 'URL' : 
                      sheetData.headers.includes('Link') ? 'Link' : null;
     let url = null;
+    
     if (urlField && row[urlField]) {
       url = row[urlField];
     } else {
@@ -179,21 +169,19 @@ async function connectToSheet() {
       }
     }
     
-    let titleContent;
-    if (url) {
-      titleContent = `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>`;
-    } else {
-      titleContent = escapeHtml(rowTitle);
-    }
+    let titleContent = url ? 
+      `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>` : 
+      escapeHtml(rowTitle);
     
     titleItem.innerHTML = `<span class="title-text">${titleContent}</span> <i class="fas fa-chevron-right title-icon"></i>`;
     
-    // When clicked, update the detail view (right panel) with the row's details.
+    // When clicked, update the detail view (right panel) with the row's details
     titleItem.addEventListener('click', function(e) {
       if (e.target.tagName === 'A') return;
+      
       detailData.innerHTML = generateDetailContent(row);
       
-      // Visual feedback for selected item:
+      // Visual feedback for selected item
       document.querySelectorAll('.title-item').forEach(item => {
         item.classList.remove('active');
       });
@@ -203,12 +191,11 @@ async function connectToSheet() {
     return titleItem;
   }
   
-  // Generate detailed HTML similar to the original accordion content.
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
       const value = row[header] || '';
-      let renderedValue = renderSpecialFields(header, value);
+      const renderedValue = renderSpecialFields(header, value);
       html += `<div class="data-label">${escapeHtml(header)}</div>
                <div class="data-value">${renderedValue}</div>`;
     });
@@ -221,13 +208,16 @@ async function connectToSheet() {
     
     const valueStr = String(value);
     const urlPattern = /^(https?:\/\/[^\s]+)$/;
+    
     if (urlPattern.test(valueStr)) {
       return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
     }
     
-    if (header.toLowerCase() === 'priority') {
+    const headerLower = header.toLowerCase();
+    if (headerLower === 'priority') {
       const priority = valueStr.toLowerCase();
       let priorityClass = '';
+      
       if (priority.includes('high')) {
         priorityClass = 'priority-high';
       } else if (priority.includes('medium') || priority.includes('med')) {
@@ -235,12 +225,13 @@ async function connectToSheet() {
       } else if (priority.includes('low')) {
         priorityClass = 'priority-low';
       }
+      
       if (priorityClass) {
         return `<span class="tag ${priorityClass}">${escapeHtml(valueStr)}</span>`;
       }
     }
     
-    if (header.toLowerCase() === 'tags' && valueStr.includes(',')) {
+    if (headerLower === 'tags' && valueStr.includes(',')) {
       const tags = valueStr.split(',').map(tag => tag.trim());
       return tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join(' ');
     }
@@ -265,15 +256,14 @@ async function connectToSheet() {
   
   function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
-    if (!aiPrompt) {
-      return;
-    }
+    if (!aiPrompt) return;
     simulateAiSearch(aiPrompt);
   }
   
   function simulateAiSearch(prompt) {
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
+    
     setTimeout(() => {
       const lowercasePrompt = prompt.toLowerCase();
       let matchedData = [];

@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!window.sheetRefreshInterval) {
       window.sheetRefreshInterval = setInterval(() => {
         connectToSheet(); // Re-fetch the sheet every 60 seconds
-      }, 60000); // 60000 ms = 60 seconds
+      }, 5000); // 60000 ms = 60 seconds
     }
 
   } catch (error) {

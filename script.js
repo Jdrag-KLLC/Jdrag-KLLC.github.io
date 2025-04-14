@@ -19,12 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const runAiSearchBtn = document.getElementById('run-ai-search');
   const aiResults = document.getElementById('ai-results');
   const aiResultsContent = document.getElementById('ai-results-content');
+  const formIframe = document.querySelector('.pdf-dropdown iframe');
 
   // App state
   let sheetData = {
     headers: [],
     data: []
   };
+  
+  let currentSelectedRow = null;
   
   // Event listeners
   connectBtn.addEventListener('click', connectToSheet);
@@ -42,7 +45,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const icon = this.querySelector('i');
     icon.classList.toggle('fa-chevron-down', isVisible);
     icon.classList.toggle('fa-chevron-up', !isVisible);
+    
+    // When form is opened and we have selected data, try to populate form fields
+    if (!isVisible && currentSelectedRow) {
+      setTimeout(() => {
+        populateGoogleForm(currentSelectedRow);
+      }, 1000); // Give the iframe some time to fully load
+    }
   });
+  
+  // Listen for iframe load event to ensure it's ready
+  if (formIframe) {
+    formIframe.addEventListener('load', function() {
+      if (currentSelectedRow) {
+        populateGoogleForm(currentSelectedRow);
+      }
+    });
+  }
   
   // Close modal when clicking outside
   window.addEventListener('click', function(event) {
@@ -179,6 +198,9 @@ document.addEventListener('DOMContentLoaded', function() {
     titleItem.addEventListener('click', function(e) {
       if (e.target.tagName === 'A') return;
       
+      // Update current selected row for form auto-filling
+      currentSelectedRow = row;
+      
       detailData.innerHTML = generateDetailContent(row);
       
       // Visual feedback for selected item
@@ -186,6 +208,13 @@ document.addEventListener('DOMContentLoaded', function() {
         item.classList.remove('active');
       });
       titleItem.classList.add('active');
+      
+      // If the form is already visible, try to populate it
+      if (pdfDropdownContent.style.display !== 'none' && formIframe) {
+        setTimeout(() => {
+          populateGoogleForm(row);
+        }, 500); // Small delay to ensure DOM is updated
+      }
     });
     
     return titleItem;
@@ -237,6 +266,207 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     return escapeHtml(valueStr);
+  }
+  
+  function populateGoogleForm(row) {
+    // Skip if no form iframe is present
+    if (!formIframe) return;
+    
+    try {
+      // Attempt to access the iframe content
+      const iframeDoc = formIframe.contentDocument || formIframe.contentWindow.document;
+      
+      // Check if we have access to the iframe (might be restricted by cross-origin policy)
+      if (!iframeDoc) {
+        console.warn('Cannot access iframe content due to cross-origin policy.');
+        
+        // For Google Forms, we can try URL parameters approach as a fallback
+        tryGoogleFormsURLParameters(row);
+        return;
+      }
+      
+      // Find all form inputs, textareas, and selects in the iframe
+      const inputs = iframeDoc.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+      
+      inputs.forEach(input => {
+        // Try to identify the field name from various attributes or surrounding label
+        const fieldName = getFieldName(input, iframeDoc);
+        if (!fieldName) return;
+        
+        // Look for matching data in our row
+        const matchingData = findMatchingData(fieldName, row);
+        if (matchingData) {
+          // Set the value based on the input type
+          if (input.tagName === 'SELECT') {
+            // For select elements, we need to find the matching option
+            setSelectValue(input, matchingData);
+          } else {
+            input.value = matchingData;
+            // Trigger input event to ensure any listeners are notified
+            const event = new Event('input', { bubbles: true });
+            input.dispatchEvent(event);
+          }
+        }
+      });
+      
+      // Handle radio buttons and checkboxes
+      const radioButtons = iframeDoc.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+      radioButtons.forEach(radio => {
+        const fieldName = getFieldName(radio, iframeDoc);
+        if (!fieldName) return;
+        
+        const matchingData = findMatchingData(fieldName, row);
+        if (matchingData) {
+          const radioValue = radio.value.toLowerCase();
+          const matchingValue = String(matchingData).toLowerCase();
+          
+          // Check if this option matches our data
+          if (radioValue === matchingValue || 
+              matchingValue.includes(radioValue) || 
+              radioValue.includes(matchingValue)) {
+            radio.checked = true;
+            const event = new Event('change', { bubbles: true });
+            radio.dispatchEvent(event);
+          }
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error while populating Google Form:', error);
+      // Try URL parameters as a fallback
+      tryGoogleFormsURLParameters(row);
+    }
+  }
+  
+  function getFieldName(input, doc) {
+    // Try to get field name from various sources
+    
+    // 1. Check for aria-label
+    if (input.getAttribute('aria-label')) {
+      return input.getAttribute('aria-label').trim();
+    }
+    
+    // 2. Check for name attribute
+    if (input.name) {
+      return input.name.replace(/entry\.\d+/, '').replace(/[-_]/g, ' ').trim();
+    }
+    
+    // 3. Check for id and corresponding label
+    if (input.id) {
+      const label = doc.querySelector(`label[for="${input.id}"]`);
+      if (label) {
+        return label.textContent.trim();
+      }
+    }
+    
+    // 4. Look for parent or ancestor with question text
+    let element = input.parentElement;
+    while (element && element.tagName !== 'FORM') {
+      // Check for question text in this element
+      const questionElement = element.querySelector('.freebirdFormviewerComponentsQuestionBaseTitle');
+      if (questionElement) {
+        return questionElement.textContent.trim();
+      }
+      
+      // Also check for any div with text that might be a label
+      const possibleLabels = element.querySelectorAll('div');
+      for (const div of possibleLabels) {
+        if (div.textContent && div.textContent.length > 0 && div.textContent.length < 100) {
+          return div.textContent.trim();
+        }
+      }
+      
+      element = element.parentElement;
+    }
+    
+    return null;
+  }
+  
+  function findMatchingData(fieldName, row) {
+    // Normalize the field name
+    const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
+    
+    // Look for exact matches first
+    for (const [key, value] of Object.entries(row)) {
+      if (key.toLowerCase() === normalizedFieldName) {
+        return value;
+      }
+    }
+    
+    // Then look for partial matches
+    for (const [key, value] of Object.entries(row)) {
+      const normalizedKey = key.toLowerCase().replace(/[-_\s]+/g, '');
+      
+      if (normalizedKey.includes(normalizedFieldName) || normalizedFieldName.includes(normalizedKey)) {
+        return value;
+      }
+    }
+    
+    return null;
+  }
+  
+  function setSelectValue(selectElement, value) {
+    const options = selectElement.options;
+    const valueString = String(value).toLowerCase();
+    
+    // First try exact match
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].value.toLowerCase() === valueString || 
+          options[i].text.toLowerCase() === valueString) {
+        selectElement.selectedIndex = i;
+        const event = new Event('change', { bubbles: true });
+        selectElement.dispatchEvent(event);
+        return;
+      }
+    }
+    
+    // Then try partial match
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].value.toLowerCase().includes(valueString) || 
+          valueString.includes(options[i].value.toLowerCase()) ||
+          options[i].text.toLowerCase().includes(valueString) || 
+          valueString.includes(options[i].text.toLowerCase())) {
+        selectElement.selectedIndex = i;
+        const event = new Event('change', { bubbles: true });
+        selectElement.dispatchEvent(event);
+        return;
+      }
+    }
+  }
+  
+  function tryGoogleFormsURLParameters(row) {
+    // This is a fallback method for Google Forms using URL parameters
+    // Google Forms accept prefilled values via URL parameters
+    
+    // Check if we're dealing with a Google Form
+    if (!formIframe.src.includes('docs.google.com/forms')) {
+      return;
+    }
+    
+    // Start with the base URL of the form
+    const formUrl = new URL(formIframe.src);
+    const baseUrl = formUrl.origin + formUrl.pathname;
+    
+    // We need to manually observe the form to extract entry IDs
+    // For demonstration, we'll just add a message to notify the user
+    console.log('Cross-origin restrictions prevent direct form population. Consider implementing the Google Forms prefill URL approach if needed.');
+    
+    // An actual implementation would require:
+    // 1. Knowing the form entry IDs (which follow pattern 'entry.12345678')
+    // 2. Mapping your data fields to these entry IDs
+    // 3. Creating a new URL with these parameters and updating the iframe src
+    
+    // This is just a placeholder for where you'd implement that logic:
+    /*
+    const prefillParams = new URLSearchParams();
+    
+    // Example mapping (you would need the actual entry IDs):
+    // prefillParams.append('entry.123456789', row['Title']);
+    // prefillParams.append('entry.987654321', row['Description']);
+    
+    const prefillUrl = `${baseUrl}?${prefillParams.toString()}`;
+    formIframe.src = prefillUrl;
+    */
   }
   
   function showError(message) {

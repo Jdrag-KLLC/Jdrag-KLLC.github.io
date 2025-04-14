@@ -8,25 +8,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* Two-panel layout using grid to ensure both panels match in height */
+    /* Increase container width so the left panel can be wider */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    /* Two-panel grid layout */
     #content-wrapper {
       display: grid;
-      grid-template-columns: 650px 1fr;
+      grid-template-columns: 350px 1fr; /* Change 650px here to adjust left panel width */
       gap: 16px;
       margin-top: 16px;
     }
-    /* Left panel styles (titles list) */
+    /* Left panel (titles list) */
     #titles-container {
       overflow-y: auto;
       border-right: 1px solid var(--border-color);
       padding-right: 8px;
     }
-    /* Right panel styles (detail view) */
+    /* Right panel (detail view) */
     #detail-content {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 400px; /* Ensures a taller box even when no data is loaded */
+      min-height: 600px;
       padding-left: 16px;
     }
   </style>
@@ -85,7 +91,7 @@
       </div>
       <!-- Right Panel: Detail view configured as a column -->
       <div id="detail-content" class="detail-content">
-         <!-- Dynamic content area (will push the PDF form down when data loads) -->
+         <!-- Dynamic content area (detail data) -->
          <div id="detail-data">
            <!-- Dynamic detail data inserted here -->
          </div>

@@ -24,19 +24,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const aiResultsContent = document.getElementById('ai-results-content');
   const formIframe = document.querySelector('.pdf-dropdown iframe');
 
-  // Application state for Google Sheet data and Gemini API key
+  // Application state for Sheet data and Gemini API key
   let sheetData = { headers: [], data: [] };
   let currentSelectedRow = null;
-  let geminiApiKey = ""; // This will store the user's Gemini API key.
+  let geminiApiKey = ""; // Stores the user-supplied Gemini API key
 
-  // Event listeners for main functions
+  // Set up event listeners
   connectBtn.addEventListener('click', connectToSheet);
   searchInput.addEventListener('input', renderFilteredData);
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
 
-  // New event listener for setting the Gemini API key
+  // Event listener to store the Gemini API key when the user clicks the button
   setGeminiApiKeyBtn.addEventListener('click', function() {
     geminiApiKey = geminiApiKeyInput.value.trim();
     if (geminiApiKey) {
@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     icon.classList.toggle('fa-chevron-down', isVisible);
     icon.classList.toggle('fa-chevron-up', !isVisible);
     
+    // If form is open and a row is selected, try populating the form after a short delay
     if (!isVisible && currentSelectedRow) {
       setTimeout(() => {
         populateGoogleForm(currentSelectedRow);
@@ -77,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Function to connect to Google Sheet and fetch data
+  // Connect to Google Sheet and fetch data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
     if (!sheetId) {
@@ -99,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const text = await response.text();
       const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
-      
       if (!jsonText || !jsonText[1]) {
         throw new Error('Invalid data format received from Google Sheets');
       }
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Process JSON data from Google Sheet and store it in sheetData
+  // Process the sheet's JSON data
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     sheetData = { headers, data };
   }
 
-  // Filter and display sheet data based on the search term
+  // Filter and render the data based on user input
   function renderFilteredData() {
     const searchTerm = searchInput?.value?.toLowerCase() || '';
     const filteredData = sheetData.data.filter(row => {
@@ -158,12 +158,12 @@ document.addEventListener('DOMContentLoaded', function() {
       titlesContainer.innerHTML = '<div class="no-results">No matching records found</div>';
     } else {
       filteredData.forEach((row, index) => {
-        titlesContainer.appendChild(createTitleItem(row, index));
+        titlesContainer.appendChild(createTitleItem(row));
       });
     }
   }
 
-  // Create and return a title item element for the sheet data
+  // Create a clickable title item for each record
   function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return titleItem;
   }
 
-  // Generate HTML for the detail view using the selected row data
+  // Generate the detailed HTML content for a record
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return html;
   }
 
-  // Render fields with special formatting (URLs, priority, tags)
+  // Format special fields (e.g., URLs, priority, tags)
   function renderSpecialFields(header, value) {
     if (!value) return '';
     
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return escapeHtml(valueStr);
   }
 
-  // Populate the embedded Google Form with data from the selected row
+  // Populate the Google Form in the iframe with data from a record
   function populateGoogleForm(row) {
     if (!formIframe) return;
     try {
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Try to obtain the label for an input field in the Google Form iframe
+  // Attempt to extract a field label from an input element in the iframe
   function getFieldName(input, doc) {
     if (input.getAttribute('aria-label')) {
       return input.getAttribute('aria-label').trim();
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  // Find matching data from the row for the given field name
+  // Search for matching data in a record based on a field name
   function findMatchingData(fieldName, row) {
     const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
     for (const [key, value] of Object.entries(row)) {
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  // Set the selected value for a <select> element
+  // Set the selected value of a <select> element
   function setSelectValue(selectElement, value) {
     const options = selectElement.options;
     const valueString = String(value).toLowerCase();
@@ -362,8 +362,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     for (let i = 0; i < options.length; i++) {
-      if (options[i].value.toLowerCase().includes(valueString) || valueString.includes(options[i].value.toLowerCase()) ||
-          options[i].text.toLowerCase().includes(valueString) || valueString.includes(options[i].text.toLowerCase())) {
+      if (options[i].value.toLowerCase().includes(valueString) ||
+          valueString.includes(options[i].value.toLowerCase()) ||
+          options[i].text.toLowerCase().includes(valueString) ||
+          valueString.includes(options[i].text.toLowerCase())) {
         selectElement.selectedIndex = i;
         const event = new Event('change', { bubbles: true });
         selectElement.dispatchEvent(event);
@@ -372,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Fallback for populating Google Forms using URL parameters
+  // Fallback method for populating Google Forms using URL parameters
   function tryGoogleFormsURLParameters(row) {
     if (!formIframe.src.includes('docs.google.com/forms')) {
       return;
@@ -389,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
     */
   }
 
-  // Display an error message
+  // Display an error message in the UI
   function showError(message) {
     errorTextElement.textContent = message;
     errorElement.style.display = 'flex';
@@ -407,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
     aiModal.style.display = 'none';
   }
 
-  // Perform an AI search using the Gemini API endpoint
+  // Perform an AI search using the Gemini API endpoint with context from the selected record (if any)
   async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
@@ -420,17 +422,35 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // Build a context string from the currently selected row (if available)
+    let contextText = "";
+    if (currentSelectedRow) {
+      contextText = "Record Information:\n";
+      for (const header of sheetData.headers) {
+        if (currentSelectedRow[header]) {
+          contextText += `${header}: ${currentSelectedRow[header]}\n`;
+        }
+      }
+    }
+    
+    // Combine the context with the user query.
+    // If a record is selected, instruct the API to answer based on that record.
+    let fullPrompt = aiPrompt;
+    if (contextText) {
+      fullPrompt = `Based on the following record information:\n${contextText}\nAnswer the following question: ${aiPrompt}`;
+    }
+    
+    // Build the payload to match the Gemini API request sample
+    const payload = {
+      contents: [{
+        parts: [{ text: fullPrompt }]
+      }]
+    };
+    
+    // Construct the URL with the user-supplied Gemini API key
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+    
     try {
-      // Construct the URL with the user-supplied Gemini API key as query param
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-      
-      // Build the payload similar to your curl sample
-      const payload = {
-        contents: [{
-          parts: [{ text: aiPrompt }]
-        }]
-      };
-      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -445,12 +465,11 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const data = await response.json();
       
-      // Assume the response contains candidates and display the first candidate's output.
-      // Adjust property names based on the actual API response.
+      // Assume the API returns an array of candidates and display the first candidate's output.
       if (data.candidates && data.candidates.length) {
         aiResultsContent.innerHTML = `<p>${data.candidates[0].output}</p>`;
       } else {
-        aiResultsContent.innerHTML = '<p>No response received.</p>';
+        aiResultsContent.innerHTML = '<p>No response received from API.</p>';
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
@@ -458,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Utility function to escape HTML
+  // Utility function to escape HTML special characters
   function escapeHtml(unsafe) {
     return unsafe
       .toString()

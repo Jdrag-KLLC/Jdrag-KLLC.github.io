@@ -92,6 +92,7 @@
       <h1><i class="fas fa-database"></i> Google Sheet Data Viewer</h1>
       <p>Interactive viewer for your spreadsheet data</p>
       
+      <!-- Container for Google Sheet ID and Connect Button -->
       <div id="api-key-container">
         <div class="input-group">
           <input type="text" id="sheet-id" placeholder="Paste your Google Sheet ID here" class="input-control">
@@ -100,6 +101,16 @@
         <p class="helper-text">
           Find your Sheet ID in the URL: 
           https://docs.google.com/spreadsheets/d/<strong>YOUR-SHEET-ID-HERE</strong>/edit
+        </p>
+      </div>
+      
+      <!-- New container for Chatbot API Key input -->
+      <div id="chatbot-api-container" style="margin-top: 20px;">
+        <div class="input-group">
+          <input type="text" id="chatbot-api-key" placeholder="Enter your Chatbot API key here" class="input-control">
+        </div>
+        <p class="helper-text">
+          Provide your Chatbot API key for secure access.
         </p>
       </div>
     </header>

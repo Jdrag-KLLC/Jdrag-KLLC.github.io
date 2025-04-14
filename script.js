@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const sheetIdInput = document.getElementById('sheet-id');
   const connectBtn = document.getElementById('connect-btn');
   const chatbotApiKeyInput = document.getElementById('chatbot-api-key');
+  const setChatbotApiKeyBtn = document.getElementById('set-chatbot-api-key');
 
   // Other existing DOM elements
   const apiKeyContainer = document.getElementById('api-key-container');
@@ -23,13 +24,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const aiResultsContent = document.getElementById('ai-results-content');
   const formIframe = document.querySelector('.pdf-dropdown iframe');
 
-  // App state for Sheet Data
-  let sheetData = {
-    headers: [],
-    data: []
-  };
-
+  // App state for Sheet Data and Chatbot API Key
+  let sheetData = { headers: [], data: [] };
   let currentSelectedRow = null;
+  let chatbotApiKey = ""; // This will store the submitted Chatbot API key.
 
   // Event listeners for the main functions
   connectBtn.addEventListener('click', connectToSheet);
@@ -37,6 +35,16 @@ document.addEventListener('DOMContentLoaded', function() {
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
+
+  // New event listener: store the Chatbot API key when button is clicked
+  setChatbotApiKeyBtn.addEventListener('click', function() {
+    chatbotApiKey = chatbotApiKeyInput.value.trim();
+    if (chatbotApiKey) {
+      alert('Chatbot API key set.');
+    } else {
+      alert('Please enter a valid Chatbot API key.');
+    }
+  });
 
   // Toggle PDF dropdown in the detail view
   const pdfDropdownHeader = document.querySelector('.pdf-dropdown .dropdown-header');
@@ -48,31 +56,25 @@ document.addEventListener('DOMContentLoaded', function() {
     icon.classList.toggle('fa-chevron-down', isVisible);
     icon.classList.toggle('fa-chevron-up', !isVisible);
     
-    // When form is opened and we have selected data, try to populate form fields
+    // When form is open and a row is selected, populate form fields
     if (!isVisible && currentSelectedRow) {
-      setTimeout(() => {
-        populateGoogleForm(currentSelectedRow);
-      }, 1000); // Give the iframe some time to fully load
+      setTimeout(() => { populateGoogleForm(currentSelectedRow); }, 1000);
     }
   });
 
-  // Listen for iframe load event to ensure it's ready for population
+  // Listen for iframe load event for Google Form population
   if (formIframe) {
     formIframe.addEventListener('load', function() {
-      if (currentSelectedRow) {
-        populateGoogleForm(currentSelectedRow);
-      }
+      if (currentSelectedRow) { populateGoogleForm(currentSelectedRow); }
     });
   }
 
-  // Close modal when clicking outside of it
+  // Close modal when clicking outside it
   window.addEventListener('click', function(event) {
-    if (event.target === aiModal) {
-      closeAiModal();
-    }
+    if (event.target === aiModal) { closeAiModal(); }
   });
 
-  // Connect to Google Sheet function
+  // Function to connect to Google Sheet and retrieve data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
     if (!sheetId) {
@@ -81,15 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
-      // Show loading state
       loadingElement.style.display = 'flex';
       errorElement.style.display = 'none';
       titlesContainer.innerHTML = '';
       detailData.innerHTML = '';
       
-      // Build the URL to fetch data from the published sheet
       const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
-      
       const response = await fetch(sheetUrl);
       if (!response.ok) {
         throw new Error('Failed to fetch the spreadsheet. Make sure the Sheet ID is correct and the sheet is published to the web.');
@@ -103,17 +102,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       const jsonData = JSON.parse(jsonText[1]);
-      
-      // Process and store the sheet data
       processSheetData(jsonData);
       
-      // Hide loading indicator, then update UI to display search and results
       loadingElement.style.display = 'none';
       apiKeyContainer.style.display = 'none';
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
-      
-      // Render the list of titles on the left panel
       renderFilteredData();
       
     } catch (error) {
@@ -123,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Process the Google Sheet JSON data and update sheetData
+  // Process JSON from Google Sheet and update sheetData
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
@@ -144,10 +138,9 @@ document.addEventListener('DOMContentLoaded', function() {
     sheetData = { headers, data };
   }
 
-  // Filter and display data based on the search term
+  // Filter and render the data based on user input
   function renderFilteredData() {
     const searchTerm = searchInput?.value?.toLowerCase() || '';
-    
     const filteredData = sheetData.data.filter(row => {
       if (!searchTerm) return true;
       return Object.values(row).some(value => 
@@ -156,8 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     resultsCount.textContent = `Showing ${filteredData.length} of ${sheetData.data.length} items`;
-    
-    // Clear and rebuild the titles list
     titlesContainer.innerHTML = '';
     
     if (filteredData.length === 0) {
@@ -169,16 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Create each title item in the list
+  // Create a title item for the left-panel list
   function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
     
-    // Use 'Title' field if available or fallback to the first header field
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
-    
-    // Determine if there's a URL associated with the title and make it clickable if so
     const urlField = sheetData.headers.includes('URL') ? 'URL' : 
                      sheetData.headers.includes('Link') ? 'Link' : null;
     let url = null;
@@ -197,33 +185,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     titleItem.innerHTML = `<span class="title-text">${titleContent}</span> <i class="fas fa-chevron-right title-icon"></i>`;
     
-    // When an item is clicked, update the detail view with row details
     titleItem.addEventListener('click', function(e) {
       if (e.target.tagName === 'A') return;
-      
-      // Set the current row to allow form population
       currentSelectedRow = row;
-      
       detailData.innerHTML = generateDetailContent(row);
-      
-      // Visual feedback for the selected item
       document.querySelectorAll('.title-item').forEach(item => {
         item.classList.remove('active');
       });
       titleItem.classList.add('active');
-      
-      // If the form dropdown is open, try populating the Google Form
       if (pdfDropdownContent.style.display !== 'none' && formIframe) {
-        setTimeout(() => {
-          populateGoogleForm(row);
-        }, 500);
+        setTimeout(() => { populateGoogleForm(row); }, 500);
       }
     });
     
     return titleItem;
   }
 
-  // Generate the HTML for the detail view based on a row's data
+  // Generate HTML content for the detail view
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
@@ -236,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return html;
   }
 
-  // Render fields with special formatting, like URLs or priority tags
+  // Render special fields such as URLs or priority tags
   function renderSpecialFields(header, value) {
     if (!value) return '';
     
@@ -251,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headerLower === 'priority') {
       const priority = valueStr.toLowerCase();
       let priorityClass = '';
-      
       if (priority.includes('high')) {
         priorityClass = 'priority-high';
       } else if (priority.includes('medium') || priority.includes('med')) {
@@ -259,7 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (priority.includes('low')) {
         priorityClass = 'priority-low';
       }
-      
       if (priorityClass) {
         return `<span class="tag ${priorityClass}">${escapeHtml(valueStr)}</span>`;
       }
@@ -273,13 +249,11 @@ document.addEventListener('DOMContentLoaded', function() {
     return escapeHtml(valueStr);
   }
 
-  // Populate the Google Form embedded via an iframe with data from the selected row
+  // Populate the embedded Google Form via the iframe with selected row data
   function populateGoogleForm(row) {
     if (!formIframe) return;
-    
     try {
       const iframeDoc = formIframe.contentDocument || formIframe.contentWindow.document;
-      
       if (!iframeDoc) {
         console.warn('Cannot access iframe content due to cross-origin policy.');
         tryGoogleFormsURLParameters(row);
@@ -302,7 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       
-      // Handle radio buttons and checkboxes
       const radioButtons = iframeDoc.querySelectorAll('input[type="radio"], input[type="checkbox"]');
       radioButtons.forEach(radio => {
         const fieldName = getFieldName(radio, iframeDoc);
@@ -325,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Try to determine a field's label from various HTML attributes
+  // Attempt to determine the label for an input field within the Google Form iframe
   function getFieldName(input, doc) {
     if (input.getAttribute('aria-label')) {
       return input.getAttribute('aria-label').trim();
@@ -356,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  // Find matching data in the row for a given field name
+  // Find matching data in a row for a given field name
   function findMatchingData(fieldName, row) {
     const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
     for (const [key, value] of Object.entries(row)) {
@@ -396,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Fallback method using URL parameters for Google Forms
+  // Fallback method using URL parameters for Google Forms (if direct DOM access fails)
   function tryGoogleFormsURLParameters(row) {
     if (!formIframe.src.includes('docs.google.com/forms')) {
       return;
@@ -404,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const formUrl = new URL(formIframe.src);
     const baseUrl = formUrl.origin + formUrl.pathname;
     console.log('Cross-origin restrictions prevent direct form population. Consider using Google Forms prefill URL parameters.');
-    // Placeholder logic: Map your data fields to form entry IDs and update the iframe src.
+    // Placeholder logic: Map your data fields to form entry IDs and update the iframe src accordingly.
     /*
     const prefillParams = new URLSearchParams();
     prefillParams.append('entry.123456789', row['Title']);
@@ -414,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
     */
   }
 
-  // Display error messages in the UI
+  // Display an error message in the UI
   function showError(message) {
     errorTextElement.textContent = message;
     errorElement.style.display = 'flex';
@@ -432,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
     aiModal.style.display = 'none';
   }
 
-  // Updated function to perform an actual AI search via the chatbot endpoint using the user-supplied API key
+  // Perform an AI search using the chatbot API endpoint and the user-supplied API key
   async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
@@ -440,22 +413,19 @@ document.addEventListener('DOMContentLoaded', function() {
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
     
-    // Retrieve the API key provided by the user
-    const userApiKey = chatbotApiKeyInput.value.trim();
-    if (!userApiKey) {
-      aiResultsContent.innerHTML = '<p>Please provide your Chatbot API key.</p>';
+    if (!chatbotApiKey) {
+      aiResultsContent.innerHTML = '<p>Please set your Chatbot API key.</p>';
       return;
     }
     
     try {
-      // Replace this with your actual chatbot API endpoint URL
+      // Replace with your actual chatbot API endpoint URL
       const apiUrl = 'https://your-chatbot-endpoint.com/api/query';
-      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userApiKey}`
+          'Authorization': `Bearer ${chatbotApiKey}`
         },
         body: JSON.stringify({ prompt: aiPrompt })
       });

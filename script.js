@@ -57,55 +57,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Functions
   async function connectToSheet() {
-    const sheetId = sheetIdInput.value.trim();
-    
-    if (!sheetId) {
-      showError('Please enter a valid Google Sheet ID');
-      return;
-    }
-    
-    try {
-      // Show loading state
-      loadingElement.style.display = 'flex';
-      errorElement.style.display = 'none';
-      titlesContainer.innerHTML = '';
-      detailData.innerHTML = '';
-      
-      // Fetch data from Google Sheet
-      const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
-      
-      const response = await fetch(sheetUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the spreadsheet. Make sure the Sheet ID is correct and the sheet is published to the web.');
-      }
-      
-      const text = await response.text();
-      const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
-      
-      if (!jsonText || !jsonText[1]) {
-        throw new Error('Invalid data format received from Google Sheets');
-      }
-      
-      const jsonData = JSON.parse(jsonText[1]);
-      
-      // Process the data
-      processSheetData(jsonData);
-      
-      // Hide loading, show search and content
-      loadingElement.style.display = 'none';
-      apiKeyContainer.style.display = 'none';
-      searchContainer.style.display = 'block';
-      resultsCount.style.display = 'block';
-      
-      // Render the data in the titles (left panel)
-      renderFilteredData();
-      
-    } catch (error) {
-      loadingElement.style.display = 'none';
-      showError(error.message || 'Failed to connect to the Google Sheet');
-      console.error('Error connecting to sheet:', error);
-    }
+  const sheetId = sheetIdInput.value.trim();
+  
+  if (!sheetId) {
+    showError('Please enter a valid Google Sheet ID');
+    return;
   }
+
+  try {
+    // Show loading state
+    loadingElement.style.display = 'flex';
+    errorElement.style.display = 'none';
+    titlesContainer.innerHTML = '';
+    detailData.innerHTML = '';
+
+    // Fetch data from Google Sheet
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
+
+    const response = await fetch(sheetUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch the spreadsheet. Make sure the Sheet ID is correct and the sheet is published to the web.');
+    }
+
+    const text = await response.text();
+    const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+
+    if (!jsonText || !jsonText[1]) {
+      throw new Error('Invalid data format received from Google Sheets');
+    }
+
+    const jsonData = JSON.parse(jsonText[1]);
+
+    // Process the data
+    processSheetData(jsonData);
+
+    // Hide loading, show search and content
+    loadingElement.style.display = 'none';
+    apiKeyContainer.style.display = 'none';
+    searchContainer.style.display = 'block';
+    resultsCount.style.display = 'block';
+
+    // Render the data in the titles (left panel)
+    renderFilteredData();
+
+    // ✅ Set up auto-refresh if not already active
+    if (!window.sheetRefreshInterval) {
+      window.sheetRefreshInterval = setInterval(() => {
+        connectToSheet(); // Re-fetch the sheet every 60 seconds
+      }, 60000); // 60000 ms = 60 seconds
+    }
+
+  } catch (error) {
+    loadingElement.style.display = 'none';
+    showError(error.message || 'Failed to connect to the Google Sheet');
+    console.error('Error connecting to sheet:', error);
+  }
+}
   
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {

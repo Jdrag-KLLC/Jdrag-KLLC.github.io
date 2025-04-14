@@ -225,72 +225,52 @@ header p {
   color: var(--error-color);
 }
 
-/* Accordion */
-.accordion-item {
-  background-color: var(--surface-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.12);
-  transition: box-shadow 0.2s;
+/* New Two-Column Layout */
+#content-wrapper {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.accordion-item:hover {
-  box-shadow: 0 1px 6px rgba(60, 64, 67, 0.2);
+.titles-container {
+  width: 30%;
+  max-height: 70vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-color);
+  padding-right: 8px;
 }
 
-.accordion-header {
-  padding: 16px;
+.detail-content {
+  flex: 1;
+  padding-left: 16px;
+}
+
+/* Title List (Left Panel) */
+.title-item {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: background-color 0.2s;
 }
 
-.accordion-header:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+.title-item:hover {
+  background-color: rgba(0,0,0,0.05);
 }
 
-.accordion-title {
-  font-weight: 500;
-  font-size: 16px;
-  color: var(--text-color);
-  /* Added flex to allow title to expand properly */
-  display: flex;
-  flex: 1;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
+.title-item.active {
+  background-color: rgba(66, 133, 244, 0.1);
 }
 
-/* Added styles for title links */
 .title-link {
   color: var(--primary-color);
   text-decoration: none;
-  /* Make sure links don't inherit accordion header cursor */
-  cursor: pointer;
-  /* For better mobile experience, add some tap area */
   padding: 4px 0;
 }
 
 .title-link:hover {
   text-decoration: underline;
-}
-
-.accordion-icon {
-  color: var(--text-secondary);
-  transition: transform 0.3s;
-  /* Added margin to separate from title */
-  margin-left: 12px;
-}
-
-.accordion-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
-  background-color: rgba(0, 0, 0, 0.02);
 }
 
 /* Data grid layout */
@@ -443,6 +423,27 @@ header p {
 .ai-results h3 {
   margin-bottom: 16px;
   color: var(--text-color);
+}
+
+/* PDF Dropdown Styles */
+.pdf-dropdown {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.pdf-dropdown .dropdown-header {
+  padding: 12px;
+  cursor: pointer;
+  background-color: var(--surface-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pdf-dropdown .dropdown-content {
+  padding: 12px;
+  background-color: var(--surface-color);
 }
 
 /* Responsive adjustments */

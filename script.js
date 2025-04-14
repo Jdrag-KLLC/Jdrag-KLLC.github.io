@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // DOM elements for Sheet integration and Chatbot API key input
+  // DOM elements for Sheet integration and Gemini API key input
   const sheetIdInput = document.getElementById('sheet-id');
   const connectBtn = document.getElementById('connect-btn');
-  const chatbotApiKeyInput = document.getElementById('chatbot-api-key');
-  const setChatbotApiKeyBtn = document.getElementById('set-chatbot-api-key');
+  const geminiApiKeyInput = document.getElementById('gemini-api-key');
+  const setGeminiApiKeyBtn = document.getElementById('set-gemini-api-key');
 
   // Other existing DOM elements
   const apiKeyContainer = document.getElementById('api-key-container');
@@ -24,25 +24,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const aiResultsContent = document.getElementById('ai-results-content');
   const formIframe = document.querySelector('.pdf-dropdown iframe');
 
-  // App state for Sheet Data and Chatbot API Key
+  // Application state for Google Sheet data and Gemini API key
   let sheetData = { headers: [], data: [] };
   let currentSelectedRow = null;
-  let chatbotApiKey = ""; // This will store the submitted Chatbot API key.
+  let geminiApiKey = ""; // This will store the user's Gemini API key.
 
-  // Event listeners for the main functions
+  // Event listeners for main functions
   connectBtn.addEventListener('click', connectToSheet);
   searchInput.addEventListener('input', renderFilteredData);
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
 
-  // New event listener: store the Chatbot API key when button is clicked
-  setChatbotApiKeyBtn.addEventListener('click', function() {
-    chatbotApiKey = chatbotApiKeyInput.value.trim();
-    if (chatbotApiKey) {
-      alert('Chatbot API key set.');
+  // New event listener for setting the Gemini API key
+  setGeminiApiKeyBtn.addEventListener('click', function() {
+    geminiApiKey = geminiApiKeyInput.value.trim();
+    if (geminiApiKey) {
+      alert('Gemini API key set.');
     } else {
-      alert('Please enter a valid Chatbot API key.');
+      alert('Please enter a valid Gemini API key.');
     }
   });
 
@@ -56,25 +56,28 @@ document.addEventListener('DOMContentLoaded', function() {
     icon.classList.toggle('fa-chevron-down', isVisible);
     icon.classList.toggle('fa-chevron-up', !isVisible);
     
-    // When form is open and a row is selected, populate form fields
     if (!isVisible && currentSelectedRow) {
-      setTimeout(() => { populateGoogleForm(currentSelectedRow); }, 1000);
+      setTimeout(() => {
+        populateGoogleForm(currentSelectedRow);
+      }, 1000);
     }
   });
 
-  // Listen for iframe load event for Google Form population
   if (formIframe) {
     formIframe.addEventListener('load', function() {
-      if (currentSelectedRow) { populateGoogleForm(currentSelectedRow); }
+      if (currentSelectedRow) {
+        populateGoogleForm(currentSelectedRow);
+      }
     });
   }
 
-  // Close modal when clicking outside it
   window.addEventListener('click', function(event) {
-    if (event.target === aiModal) { closeAiModal(); }
+    if (event.target === aiModal) {
+      closeAiModal();
+    }
   });
 
-  // Function to connect to Google Sheet and retrieve data
+  // Function to connect to Google Sheet and fetch data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
     if (!sheetId) {
@@ -117,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Process JSON from Google Sheet and update sheetData
+  // Process JSON data from Google Sheet and store it in sheetData
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
@@ -138,12 +141,12 @@ document.addEventListener('DOMContentLoaded', function() {
     sheetData = { headers, data };
   }
 
-  // Filter and render the data based on user input
+  // Filter and display sheet data based on the search term
   function renderFilteredData() {
     const searchTerm = searchInput?.value?.toLowerCase() || '';
     const filteredData = sheetData.data.filter(row => {
       if (!searchTerm) return true;
-      return Object.values(row).some(value => 
+      return Object.values(row).some(value =>
         String(value).toLowerCase().includes(searchTerm)
       );
     });
@@ -160,14 +163,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Create a title item for the left-panel list
+  // Create and return a title item element for the sheet data
   function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
     
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
-    const urlField = sheetData.headers.includes('URL') ? 'URL' : 
+    const urlField = sheetData.headers.includes('URL') ? 'URL' :
                      sheetData.headers.includes('Link') ? 'Link' : null;
     let url = null;
     if (urlField && row[urlField]) {
@@ -179,8 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    let titleContent = url ? 
-      `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>` : 
+    let titleContent = url ?
+      `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>` :
       escapeHtml(rowTitle);
     
     titleItem.innerHTML = `<span class="title-text">${titleContent}</span> <i class="fas fa-chevron-right title-icon"></i>`;
@@ -201,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return titleItem;
   }
 
-  // Generate HTML content for the detail view
+  // Generate HTML for the detail view using the selected row data
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
@@ -214,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return html;
   }
 
-  // Render special fields such as URLs or priority tags
+  // Render fields with special formatting (URLs, priority, tags)
   function renderSpecialFields(header, value) {
     if (!value) return '';
     
@@ -249,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return escapeHtml(valueStr);
   }
 
-  // Populate the embedded Google Form via the iframe with selected row data
+  // Populate the embedded Google Form with data from the selected row
   function populateGoogleForm(row) {
     if (!formIframe) return;
     try {
@@ -298,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Attempt to determine the label for an input field within the Google Form iframe
+  // Try to obtain the label for an input field in the Google Form iframe
   function getFieldName(input, doc) {
     if (input.getAttribute('aria-label')) {
       return input.getAttribute('aria-label').trim();
@@ -329,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  // Find matching data in a row for a given field name
+  // Find matching data from the row for the given field name
   function findMatchingData(fieldName, row) {
     const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
     for (const [key, value] of Object.entries(row)) {
@@ -346,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  // Set the value of a select element based on matching text or value
+  // Set the selected value for a <select> element
   function setSelectValue(selectElement, value) {
     const options = selectElement.options;
     const valueString = String(value).toLowerCase();
@@ -369,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Fallback method using URL parameters for Google Forms (if direct DOM access fails)
+  // Fallback for populating Google Forms using URL parameters
   function tryGoogleFormsURLParameters(row) {
     if (!formIframe.src.includes('docs.google.com/forms')) {
       return;
@@ -377,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formUrl = new URL(formIframe.src);
     const baseUrl = formUrl.origin + formUrl.pathname;
     console.log('Cross-origin restrictions prevent direct form population. Consider using Google Forms prefill URL parameters.');
-    // Placeholder logic: Map your data fields to form entry IDs and update the iframe src accordingly.
     /*
     const prefillParams = new URLSearchParams();
     prefillParams.append('entry.123456789', row['Title']);
@@ -387,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
     */
   }
 
-  // Display an error message in the UI
+  // Display an error message
   function showError(message) {
     errorTextElement.textContent = message;
     errorElement.style.display = 'flex';
@@ -405,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
     aiModal.style.display = 'none';
   }
 
-  // Perform an AI search using the chatbot API endpoint and the user-supplied API key
+  // Perform an AI search using the Gemini API endpoint
   async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
@@ -413,21 +415,28 @@ document.addEventListener('DOMContentLoaded', function() {
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
     
-    if (!chatbotApiKey) {
-      aiResultsContent.innerHTML = '<p>Please set your Chatbot API key.</p>';
+    if (!geminiApiKey) {
+      aiResultsContent.innerHTML = '<p>Please set your Gemini API key.</p>';
       return;
     }
     
     try {
-      // Replace with your actual chatbot API endpoint URL
-      const apiUrl = 'https://your-chatbot-endpoint.com/api/query';
+      // Construct the URL with the user-supplied Gemini API key as query param
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+      
+      // Build the payload similar to your curl sample
+      const payload = {
+        contents: [{
+          parts: [{ text: aiPrompt }]
+        }]
+      };
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${chatbotApiKey}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ prompt: aiPrompt })
+        body: JSON.stringify(payload)
       });
       
       if (!response.ok) {
@@ -435,14 +444,21 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       const data = await response.json();
-      aiResultsContent.innerHTML = `<p>${data.response}</p>`;
+      
+      // Assume the response contains candidates and display the first candidate's output.
+      // Adjust property names based on the actual API response.
+      if (data.candidates && data.candidates.length) {
+        aiResultsContent.innerHTML = `<p>${data.candidates[0].output}</p>`;
+      } else {
+        aiResultsContent.innerHTML = '<p>No response received.</p>';
+      }
     } catch (error) {
-      console.error('Error calling AI service:', error);
+      console.error('Error calling Gemini API:', error);
       aiResultsContent.innerHTML = `<p>Error: ${error.message}. Please try again later.</p>`;
     }
   }
 
-  // Utility function to escape HTML special characters
+  // Utility function to escape HTML
   function escapeHtml(unsafe) {
     return unsafe
       .toString()

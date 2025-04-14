@@ -51,7 +51,22 @@
       <p id="error-text"></p>
     </div>
     
-    <div id="accordion-container" class="accordion-container"></div>
+    <!-- New two-column layout -->
+    <div id="content-wrapper">
+      <!-- Left side: Scrollable Titles -->
+      <div id="titles-container" class="titles-container"></div>
+      <!-- Right side: Detail view with PDF dropdown -->
+      <div id="detail-content" class="detail-content">
+         <div class="pdf-dropdown">
+           <div class="dropdown-header">Input pdf's <i class="fas fa-chevron-down"></i></div>
+           <div class="dropdown-content" style="display: none;">
+             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="640" height="830" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+           </div>
+         </div>
+         <!-- This div is updated with the details of the selected title -->
+         <div id="detail-data"></div>
+      </div>
+    </div>
     
     <div id="ai-modal" class="modal">
       <div class="modal-content">

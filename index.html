@@ -51,22 +51,25 @@
       <p id="error-text"></p>
     </div>
     
-    <!-- Two-panel layout: Left side for titles, right side for detail view -->
+    <!-- Two-panel layout with matching heights -->
     <div id="content-wrapper" style="display: flex; flex-direction: row; gap: 16px; margin-top: 16px; align-items: stretch;">
-      <!-- Left Panel: Scrollable Titles List (flexible height) -->
-      <div id="titles-container" class="titles-container" style="width: 300px; overflow-y: auto; border-right: 1px solid var(--border-color); padding-right: 8px;">
+      <!-- Left Panel: Scrollable Titles List; fixed width -->
+      <div id="titles-container" class="titles-container" style="flex: 0 0 300px; overflow-y: auto; border-right: 1px solid var(--border-color); padding-right: 8px;">
         <!-- Titles will be dynamically inserted here -->
       </div>
-      <!-- Right Panel: Detail View with PDF Dropdown -->
-      <div id="detail-content" class="detail-content" style="flex: 1; padding-left: 16px;">
+      <!-- Right Panel: Detail view configured as a column -->
+      <div id="detail-content" class="detail-content" style="flex: 1; display: flex; flex-direction: column; padding-left: 16px;">
+         <!-- Detail data takes up available vertical space -->
+         <div id="detail-data" style="flex: 1;"></div>
+         <!-- Embedded form now fixed at the bottom of the right panel -->
          <div class="pdf-dropdown">
            <div class="dropdown-header">Input pdf's <i class="fas fa-chevron-down"></i></div>
            <div class="dropdown-content" style="display: none;">
-             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="640" height="830" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="640" height="830" frameborder="0" marginheight="0" marginwidth="0">
+             Loading…
+             </iframe>
            </div>
          </div>
-         <!-- Detail data will be dynamically inserted here -->
-         <div id="detail-data"></div>
       </div>
     </div>
     

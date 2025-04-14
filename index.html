@@ -14,7 +14,6 @@
       margin: 0 auto;
       padding: 20px;
     }
-
     /* Two-panel layout using flex */
     #content-wrapper {
       display: flex;
@@ -24,54 +23,46 @@
       width: 100%;
       overflow: hidden;
     }
-
     /* Left Panel (Titles List) */
     #titles-container {
-      flex: 0 0 350px; /* Fixed width but won't grow or shrink */
+      flex: 0 0 350px;
       overflow-y: auto;
-      border-right: 1px solid #ccc; /* Fallback if var(--border-color) isn't defined */
+      border-right: 1px solid #ccc;
       padding-right: 16px;
       margin-right: 16px;
       height: 100%;
     }
-
     /* Right Panel (Detail View) */
     #detail-content {
-      flex: 1; /* Takes remaining space */
+      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       height: 100%;
       overflow-y: auto;
     }
-
     /* Dynamic detail data area */
     #detail-data {
       flex: 1;
       margin-bottom: 20px;
     }
-
     /* PDF dropdown container */
     .pdf-dropdown {
       width: 100%;
     }
-
     /* General styling improvements */
     .dropdown-content {
       width: 100%;
     }
-
     .dropdown-content iframe {
       max-width: 100%;
     }
-
     /* Helper for small screens */
     @media (max-width: 768px) {
       #content-wrapper {
         flex-direction: column;
         height: auto;
       }
-      
       #titles-container {
         flex: 0 0 auto;
         max-height: 300px;
@@ -104,17 +95,19 @@
         </p>
       </div>
       
-      <!-- New container for Chatbot API Key input -->
-      <div id="chatbot-api-container" style="margin-top: 20px;">
+      <!-- New container for Gemini API Key input -->
+      <div id="gemini-api-container" style="margin-top: 20px;">
         <div class="input-group">
-          <input type="text" id="chatbot-api-key" placeholder="Enter your Chatbot API key here" class="input-control">
+          <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key here" class="input-control">
+          <button id="set-gemini-api-key" class="btn primary-btn">Set API Key</button>
         </div>
         <p class="helper-text">
-          Provide your Chatbot API key for secure access.
+          Provide your Gemini API key for secure access.
         </p>
       </div>
     </header>
 
+    <!-- Search Container and AI Modal remain the same -->
     <div id="search-container" class="search-container" style="display: none;">
       <div class="search-icon">
         <i class="fas fa-search"></i>
@@ -176,7 +169,7 @@
         <span class="close-modal">&times;</span>
         <h2><i class="fas fa-robot"></i> AI-Powered Search</h2>
         <p>Describe what you're looking for in natural language:</p>
-        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Show me all high priority items related to frontend development'"></textarea>
+        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Explain how AI works'"></textarea>
         <div class="modal-footer">
           <button id="run-ai-search" class="btn primary-btn">Search</button>
         </div>

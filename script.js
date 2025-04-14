@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const loadingElement = document.getElementById('loading');
   const errorElement = document.getElementById('error-message');
   const errorTextElement = document.getElementById('error-text');
-  const accordionContainer = document.getElementById('accordion-container');
+  // Updated containers for new layout:
+  const titlesContainer = document.getElementById('titles-container'); // Left panel for titles
+  const detailData = document.getElementById('detail-data'); // Right panel for details
   const aiSearchBtn = document.getElementById('ai-search');
   const aiModal = document.getElementById('ai-modal');
   const closeModal = document.querySelector('.close-modal');
@@ -23,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     headers: [],
     data: []
   };
-  let expandedRows = {};
   
   // Event listeners
   connectBtn.addEventListener('click', connectToSheet);
@@ -31,6 +32,21 @@ document.addEventListener('DOMContentLoaded', function() {
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
+  
+  // Toggle PDF dropdown in the detail view
+  const pdfDropdownHeader = document.querySelector('.pdf-dropdown .dropdown-header');
+  const pdfDropdownContent = document.querySelector('.pdf-dropdown .dropdown-content');
+  pdfDropdownHeader.addEventListener('click', function(){
+    if(pdfDropdownContent.style.display === 'none'){
+      pdfDropdownContent.style.display = 'block';
+      this.querySelector('i').classList.remove('fa-chevron-down');
+      this.querySelector('i').classList.add('fa-chevron-up');
+    } else {
+      pdfDropdownContent.style.display = 'none';
+      this.querySelector('i').classList.remove('fa-chevron-up');
+      this.querySelector('i').classList.add('fa-chevron-down');
+    }
+  });
   
   // Close modal when clicking outside
   window.addEventListener('click', function(event) {
@@ -52,10 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
       // Show loading state
       loadingElement.style.display = 'flex';
       errorElement.style.display = 'none';
-      accordionContainer.innerHTML = '';
+      titlesContainer.innerHTML = '';
+      detailData.innerHTML = '';
       
       // Fetch data from Google Sheet
-      // Using public sheet URL format that returns JSON
       const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=cleaned`;
       
       const response = await fetch(sheetUrl);
@@ -64,9 +80,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       const text = await response.text();
-      
-      // Google's response comes with some JS prefix we need to remove
-      // It's in the format: google.visualization.Query.setResponse({...});
       const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
       
       if (!jsonText || !jsonText[1]) {
@@ -84,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
       
-      // Render the data
+      // Render the data in the titles (left panel)
       renderFilteredData();
       
     } catch (error) {
@@ -101,16 +114,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const rows = jsonData.table.rows;
     const cols = jsonData.table.cols;
-    
-    // Extract headers
     const headers = cols.map(col => col.label || '');
     
-    // Extract data rows
     const data = rows.map(row => {
       const rowData = {};
       row.c.forEach((cell, index) => {
         const header = headers[index];
-        // Cell value can be null or have different formats
         rowData[header] = cell ? (cell.v !== null && cell.v !== undefined ? cell.v : '') : '';
       });
       return rowData;
@@ -129,144 +138,96 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const filteredData = sheetData.data.filter(row => {
       if (!searchTerm) return true;
-      
-      // Search in all fields
       return Object.values(row).some(value => 
         String(value).toLowerCase().includes(searchTerm)
       );
     });
     
-    // Update results count
     resultsCount.textContent = `Showing ${filteredData.length} of ${sheetData.data.length} items`;
     
-    // Clear container
-    accordionContainer.innerHTML = '';
+    // Clear the titles container
+    titlesContainer.innerHTML = '';
     
-    // Render filtered data
     if (filteredData.length === 0) {
-      accordionContainer.innerHTML = '<div class="no-results">No matching records found</div>';
+      titlesContainer.innerHTML = '<div class="no-results">No matching records found</div>';
     } else {
       filteredData.forEach((row, index) => {
-        accordionContainer.appendChild(createAccordionItem(row, index));
+        titlesContainer.appendChild(createTitleItem(row, index));
       });
     }
   }
   
-  function createAccordionItem(row, index) {
-    const accordionItem = document.createElement('div');
-    accordionItem.className = 'accordion-item';
+  // Create a clickable title item for the left panel.
+  function createTitleItem(row, index) {
+    const titleItem = document.createElement('div');
+    titleItem.className = 'title-item';
     
-    // Create header
-    const header = document.createElement('div');
-    header.className = 'accordion-header';
-    header.dataset.index = index;
-    
-    // Get row title (use Title field if available, otherwise first column, or fallback)
+    // Determine row title (using 'Title' field if available)
     const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
     const rowTitle = row[titleField] || 'Untitled Item';
     
-    // Extract URL if present in title or content
+    // Check if there's a URL (from 'URL' or 'Link') and make clickable if so.
     const urlField = sheetData.headers.includes('URL') ? 'URL' : 
                      sheetData.headers.includes('Link') ? 'Link' : null;
-    
-    // URL from dedicated field or extract from title
     let url = null;
     if (urlField && row[urlField]) {
       url = row[urlField];
     } else {
-      // Try to extract URL from title if it contains a URL
       const urlMatches = rowTitle.match(/(https?:\/\/[^\s]+)/);
       if (urlMatches) {
         url = urlMatches[0];
       }
     }
     
-    // Create the title element
     let titleContent;
     if (url) {
-      // If we have a URL, make the title clickable
       titleContent = `<a href="${escapeHtml(url)}" target="_blank" class="title-link">${escapeHtml(rowTitle)}</a>`;
     } else {
-      // No URL, just show the title
       titleContent = escapeHtml(rowTitle);
     }
     
-    header.innerHTML = `
-      <span class="accordion-title">${titleContent}</span>
-      <i class="fas fa-chevron-down accordion-icon"></i>
-    `;
+    titleItem.innerHTML = `<span class="title-text">${titleContent}</span> <i class="fas fa-chevron-right title-icon"></i>`;
     
-    // Create content panel
-    const content = document.createElement('div');
-    content.className = 'accordion-content';
-    
-    // Add data fields
-    let contentHtml = '<div class="data-grid">';
-    
-    sheetData.headers.forEach(header => {
-      const value = row[header] || '';
+    // When clicked, update the detail view (right panel) with the row's details.
+    titleItem.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') return;
+      detailData.innerHTML = generateDetailContent(row);
       
-      // Special rendering for different field types
-      let renderedValue = renderSpecialFields(header, value);
-      
-      contentHtml += `
-        <div class="data-label">${escapeHtml(header)}</div>
-        <div class="data-value">${renderedValue}</div>
-      `;
+      // Visual feedback for selected item:
+      document.querySelectorAll('.title-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      titleItem.classList.add('active');
     });
     
-    contentHtml += '</div>';
-    content.innerHTML = contentHtml;
-    
-    // Set up click handler
-    header.addEventListener('click', function(e) {
-      // Check if the click was on a hyperlink
-      if (e.target.tagName === 'A') {
-        // If it's a link, let the browser handle the click (don't toggle)
-        e.stopPropagation();
-        return;
-      }
-      
-      // Otherwise toggle the accordion
-      toggleAccordion(content, this.querySelector('.accordion-icon'));
-    });
-    
-    // Assemble accordion item
-    accordionItem.appendChild(header);
-    accordionItem.appendChild(content);
-    
-    return accordionItem;
+    return titleItem;
   }
   
-  function toggleAccordion(contentElement, iconElement) {
-    // Check if it's already open
-    const isOpen = contentElement.style.maxHeight;
-    
-    if (isOpen) {
-      contentElement.style.maxHeight = null;
-      iconElement.className = 'fas fa-chevron-down accordion-icon';
-    } else {
-      contentElement.style.maxHeight = contentElement.scrollHeight + 'px';
-      iconElement.className = 'fas fa-chevron-up accordion-icon';
-    }
+  // Generate detailed HTML similar to the original accordion content.
+  function generateDetailContent(row) {
+    let html = '<div class="data-grid">';
+    sheetData.headers.forEach(header => {
+      const value = row[header] || '';
+      let renderedValue = renderSpecialFields(header, value);
+      html += `<div class="data-label">${escapeHtml(header)}</div>
+               <div class="data-value">${renderedValue}</div>`;
+    });
+    html += '</div>';
+    return html;
   }
   
   function renderSpecialFields(header, value) {
     if (!value) return '';
     
     const valueStr = String(value);
-    
-    // Handle URLs
     const urlPattern = /^(https?:\/\/[^\s]+)$/;
     if (urlPattern.test(valueStr)) {
       return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
     }
     
-    // Handle Priority fields
     if (header.toLowerCase() === 'priority') {
       const priority = valueStr.toLowerCase();
       let priorityClass = '';
-      
       if (priority.includes('high')) {
         priorityClass = 'priority-high';
       } else if (priority.includes('medium') || priority.includes('med')) {
@@ -274,19 +235,16 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (priority.includes('low')) {
         priorityClass = 'priority-low';
       }
-      
       if (priorityClass) {
         return `<span class="tag ${priorityClass}">${escapeHtml(valueStr)}</span>`;
       }
     }
     
-    // Handle Tags fields
     if (header.toLowerCase() === 'tags' && valueStr.includes(',')) {
       const tags = valueStr.split(',').map(tag => tag.trim());
       return tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join(' ');
     }
     
-    // Default rendering
     return escapeHtml(valueStr);
   }
   
@@ -307,41 +265,31 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
-    
     if (!aiPrompt) {
       return;
     }
-    
-    // In a real implementation, this would call your AI service
-    // For now, we'll do a simple simulation
     simulateAiSearch(aiPrompt);
   }
   
   function simulateAiSearch(prompt) {
-    // Show a loading state
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
-    
-    // Simulate processing time
     setTimeout(() => {
       const lowercasePrompt = prompt.toLowerCase();
       let matchedData = [];
       
-      // Simple keyword matching - in a real implementation, this would use AI
       if (lowercasePrompt.includes('high priority')) {
         matchedData = sheetData.data.filter(row => {
           const priority = row['Priority']?.toLowerCase() || '';
           return priority.includes('high');
         });
       } else if (lowercasePrompt.includes('recent')) {
-        // Sort by date if available
         matchedData = [...sheetData.data].sort((a, b) => {
           const dateA = new Date(a['Date'] || 0);
           const dateB = new Date(b['Date'] || 0);
           return dateB - dateA;
-        }).slice(0, 3); // Show 3 most recent
+        }).slice(0, 3);
       } else {
-        // Simple keyword search across all fields
         const keywords = lowercasePrompt.split(' ');
         matchedData = sheetData.data.filter(row => {
           return keywords.some(keyword => 
@@ -352,7 +300,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       }
       
-      // Display results
       if (matchedData.length === 0) {
         aiResultsContent.innerHTML = '<p>No matching items found. Try a different query.</p>';
       } else {
@@ -370,8 +317,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         aiResultsContent.appendChild(resultsList);
-        
-        // Add a note about future AI capabilities
         const aiNote = document.createElement('p');
         aiNote.className = 'ai-note';
         aiNote.innerHTML = '<small>Note: This is a simulated AI search. In the full implementation, this will use a more sophisticated AI to understand and process your query.</small>';

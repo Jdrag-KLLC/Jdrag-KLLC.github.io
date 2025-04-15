@@ -5,324 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google Sheet Data Viewer</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
   <style>
-    :root {
-      --primary-color: #4361ee;
-      --primary-light: #eef2ff;
-      --primary-dark: #3a56d4;
-      --accent-color: #f72585;
-      --text-color: #2b2d42;
-      --text-secondary: #6c757d;
-      --background-color: #f8f9fa;
-      --surface-color: #ffffff;
-      --border-color: #e9ecef;
-      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
-      --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
-      --radius-sm: 4px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --spacing-xs: 4px;
-      --spacing-sm: 8px;
-      --spacing-md: 16px;
-      --spacing-lg: 24px;
-      --spacing-xl: 32px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      line-height: 1.6;
-      color: var(--text-color);
-      background-color: var(--background-color);
-    }
-
+    /* Basic container styles */
     .container {
       max-width: 1400px;
       margin: 0 auto;
-      padding: var(--spacing-lg);
+      padding: 20px;
     }
-
-    header {
-      margin-bottom: var(--spacing-xl);
-      text-align: center;
-    }
-
-    header h1 {
-      font-size: 2rem;
-      font-weight: 600;
-      color: var(--primary-color);
-      margin-bottom: var(--spacing-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    header h1 i {
-      margin-right: var(--spacing-md);
-      font-size: 1.75rem;
-    }
-
-    header p {
-      color: var(--text-secondary);
-      font-size: 1rem;
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .input-group {
-      display: flex;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .input-control {
-      flex: 1;
-      padding: 12px 16px;
-      font-size: 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .input-control:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
-    }
-
-    .btn {
-      padding: 12px 20px;
-      font-size: 1rem;
-      font-weight: 500;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .primary-btn {
-      background-color: var(--primary-color);
-      color: white;
-    }
-
-    .primary-btn:hover {
-      background-color: var(--primary-dark);
-      transform: translateY(-1px);
-    }
-
-    .primary-btn:active {
-      transform: translateY(1px);
-    }
-
-    #api-key-container .btn {
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    }
-
-    .helper-text {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-top: var(--spacing-sm);
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* Search bar */
-    .search-container {
-      position: relative;
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-secondary);
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 14px 110px 14px 40px;
-      font-size: 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .search-input:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
-    }
-
-    .ai-search-btn {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      background-color: var(--accent-color);
-      color: white;
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      transition: all 0.2s ease;
-    }
-
-    .ai-search-btn:hover {
-      background-color: #e91e74;
-      transform: translateY(-50%) translateX(-2px);
-    }
-
-    .ai-search-btn i {
-      margin-right: 6px;
-    }
-
-    .results-count {
-      margin-bottom: var(--spacing-md);
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    /* Loading spinner */
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 0;
-    }
-
-    .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(67, 97, 238, 0.2);
-      border-top: 4px solid var(--primary-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: var(--spacing-md);
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .loading-container p {
-      color: var(--text-secondary);
-    }
-
-    /* Error message */
-    .error-container {
-      display: flex;
-      align-items: center;
-      background-color: #ffe3e3;
-      border: 1px solid #ff8080;
-      padding: var(--spacing-md);
-      border-radius: var(--radius-md);
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .error-container i {
-      color: #ff3333;
-      margin-right: 12px;
-      font-size: 24px;
-    }
-
-    .error-container p {
-      color: #e60000;
-    }
-
-    /* Content wrapper - two-panel layout */
+    /* Two-panel layout using flex */
     #content-wrapper {
       display: flex;
-      margin-top: var(--spacing-md);
-      height: calc(100vh - 220px);
-      min-height: 500px;
-      gap: var(--spacing-lg);
-      background-color: var(--surface-color);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
+      margin-top: 16px;
+      height: calc(100vh - 250px); /* Adjust based on your header size */
+      min-height: 350px;
+      width: 100%;
       overflow: hidden;
     }
-
     /* Left Panel (Titles List) */
     #titles-container {
       flex: 0 0 350px;
       overflow-y: auto;
-      border-right: 1px solid var(--border-color);
-      background-color: #f5f7fa;
+      border-right: 1px solid #ccc;
+      padding-right: 16px;
+      margin-right: 16px;
       height: 100%;
-      padding: var(--spacing-md);
     }
-
-    .title-item {
-      padding: var(--spacing-sm) var(--spacing-md);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      margin-bottom: var(--spacing-xs);
-      transition: all 0.2s ease;
-      font-size: 0.95rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .title-item:hover {
-      background-color: rgba(67, 97, 238, 0.08);
-      transform: translateX(2px);
-    }
-
-    .title-item.active {
-      background-color: var(--primary-light);
-      border-left: 3px solid var(--primary-color);
-      font-weight: 500;
-    }
-
-    .title-text {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .title-link {
-      color: var(--primary-color);
-      text-decoration: none;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      display: block;
-    }
-
-    .title-link:hover {
-      text-decoration: underline;
-    }
-
-    .title-icon {
-      color: var(--text-secondary);
-      font-size: 0.75rem;
-      transition: transform 0.2s ease;
-    }
-
-    .title-item.active .title-icon {
-      color: var(--primary-color);
-      transform: translateX(2px);
-    }
-
     /* Right Panel (Detail View) */
     #detail-content {
       flex: 1;
@@ -330,305 +41,127 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100%;
-      padding: var(--spacing-lg);
-      overflow: hidden;
+      overflow-y: auto;
     }
-
     /* Dynamic detail data area */
     #detail-data {
       flex: 1;
-      overflow-y: auto;
-      padding-right: var(--spacing-md);
-      margin-bottom: var(--spacing-lg);
+      margin-bottom: 20px;
     }
-
-    /* Data grid layout for details */
-    .data-grid {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 16px 24px;
-    }
-
-    .data-label {
-      font-weight: 500;
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      padding: var(--spacing-xs) 0;
-    }
-
-    .data-value {
-      color: var(--text-color);
-      padding: var(--spacing-xs) 0;
-      word-break: break-word;
-    }
-
-    .data-value a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .data-value a:hover {
-      text-decoration: underline;
-    }
-
     /* RAG dropdown container */
     .rag-dropdown {
-      background-color: #f5f7fa;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      margin-top: auto;
+      width: 100%;
     }
-
-    .dropdown-header {
-      padding: var(--spacing-md);
-      cursor: pointer;
-      background-color: var(--primary-light);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 500;
-      color: var(--primary-color);
-      transition: background-color 0.2s ease;
-    }
-
-    .dropdown-header:hover {
-      background-color: #e2e8ff;
-    }
-
-    .dropdown-content {
-      padding: var(--spacing-md);
-      background-color: var(--surface-color);
-    }
-
     /* File upload area */
     .file-upload-area {
-      border: 2px dashed #cfd8dc;
-      padding: var(--spacing-lg);
+      border: 2px dashed #ccc;
+      padding:.20px;
       text-align: center;
-      margin-bottom: var(--spacing-md);
-      border-radius: var(--radius-md);
-      transition: all 0.2s ease;
+      margin-bottom: 16px;
+      border-radius: 8px;
     }
-
-    .file-upload-area:hover {
-      border-color: var(--primary-color);
-      background-color: var(--primary-light);
-    }
-
     /* Chat container */
     .chat-container {
       display: flex;
       flex-direction: column;
-      height: 350px;
+      height: 400px;
     }
-
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: var(--spacing-md);
-      margin-bottom: var(--spacing-md);
-      background-color: #f9fafc;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background-color: #f9f9f9;
     }
-
     .message {
-      margin-bottom: var(--spacing-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      border-radius: var(--radius-lg);
-      max-width: 85%;
-      box-shadow: var(--shadow-sm);
-      position: relative;
-      line-height: 1.5;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 16px;
+      max-width: 80%;
     }
-
     .user-message {
-      background-color: #e3f2fd;
+      background-color: #DCF8C6;
       align-self: flex-end;
       margin-left: auto;
-      border-bottom-right-radius: 0;
-      color: #0d47a1;
     }
-
     .ai-message {
-      background-color: #f0f2f5;
+      background-color: #ECECEC;
       align-self: flex-start;
-      border-bottom-left-radius: 0;
-      color: #424242;
     }
-
     .chat-input-container {
       display: flex;
-      gap: var(--spacing-sm);
+      gap: 8px;
     }
-
     .chat-input {
       flex: 1;
       padding: 12px;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      transition: all 0.2s ease;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
-
-    .chat-input:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
-      outline: none;
-    }
-
     /* File list styles */
     .file-list {
-      margin-top: var(--spacing-md);
+      margin-top: 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: var(--spacing-sm);
+      gap: 8px;
     }
-
     .file-item {
-      background-color: var(--primary-light);
+      background-color: #f0f0f0;
       padding: 6px 12px;
       border-radius: 16px;
-      font-size: 0.875rem;
+      font-size: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.2s ease;
     }
-
-    .file-item:hover {
-      background-color: #dfe3fa;
-    }
-
     .file-item i {
       cursor: pointer;
-      color: var(--accent-color);
+      color: #ff5555;
     }
-
     /* Download button styles */
     .download-btn {
       padding: 8px 16px;
-      background-color: #2ecc71;
+      background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: var(--radius-sm);
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 0.875rem;
+      margin-top: 8px;
+      font-size: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.2s ease;
     }
-
     .download-btn:hover {
-      background-color: #27ae60;
-      transform: translateY(-1px);
+      background-color: #3e8e41;
     }
-
     .download-btn i {
-      font-size: 1rem;
+      font-size: 16px;
     }
-
     .actions-container {
       display: flex;
       justify-content: space-between;
-      margin-top: var(--spacing-sm);
+      margin-top: 10px;
     }
-
-    /* Modal styles */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content {
-      background-color: var(--surface-color);
-      margin: 10% auto;
-      padding: var(--spacing-lg);
-      width: 90%;
-      max-width: 600px;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      animation: modalFadeIn 0.3s;
-    }
-
-    @keyframes modalFadeIn {
-      from {opacity: 0; transform: translateY(-20px);}
-      to {opacity: 1; transform: translateY(0);}
-    }
-
-    .close-modal {
-      color: var(--text-secondary);
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: color 0.2s ease;
-    }
-
-    .close-modal:hover {
-      color: var(--text-color);
-    }
-
-    /* No results state */
-    .no-results {
-      padding: var(--spacing-xl);
-      text-align: center;
-      color: var(--text-secondary);
-      background-color: #f5f7fa;
-      border-radius: var(--radius-md);
-      font-size: 1rem;
-    }
-
     /* Helper for small screens */
     @media (max-width: 768px) {
       #content-wrapper {
         flex-direction: column;
         height: auto;
       }
-      
       #titles-container {
         flex: 0 0 auto;
         max-height: 300px;
         width: 100%;
         border-right: none;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid #ccc;
+        padding-right: 0;
+        margin-right: 0;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
       }
-
-      .data-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .data-label {
-        margin-bottom: -8px;
-        padding-bottom: 0;
-      }
-    }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #c1c9d2;
-      border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #a3adb8;
     }
   </style>
 </head>
@@ -662,7 +195,7 @@
       </div>
     </header>
 
-    <!-- Search Container -->
+    <!-- Search Container and AI Modal remain the same -->
     <div id="search-container" class="search-container" style="display: none;">
       <div class="search-icon">
         <i class="fas fa-search"></i>
@@ -705,11 +238,10 @@
           <!-- Detail content goes here -->
         </div>
         
-        <!-- RAG Document Interaction -->
+        <!-- RAG Document Interaction - replaces PDF Dropdown -->
         <div class="rag-dropdown">
           <div class="dropdown-header">
-            <span><i class="fas fa-comments"></i> Ask Questions About This Record</span>
-            <i class="fas fa-chevron-down"></i>
+            Ask Questions <i class="fas fa-chevron-down"></i>
           </div>
           <div class="dropdown-content" style="display: none;">
             <div class="file-upload-area" id="file-upload-area">
@@ -735,7 +267,7 @@
               </div>
             </div>
             
-            <!-- Download Chat Button -->
+            <!-- New Download Chat Button -->
             <div class="actions-container">
               <button id="download-chat" class="download-btn">
                 <i class="fas fa-download"></i> Download Chat History
@@ -751,7 +283,7 @@
         <span class="close-modal">&times;</span>
         <h2><i class="fas fa-robot"></i> AI-Powered Search</h2>
         <p>Describe what you're looking for in natural language:</p>
-        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Find records related to machine learning' or 'Show me entries with high priority'"></textarea>
+        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Explain how AI works'"></textarea>
         <div class="modal-footer">
           <button id="run-ai-search" class="btn primary-btn">Search</button>
         </div>
@@ -763,6 +295,7 @@
     </div>
   </div>
   
+  <!-- No need for JSZip, using simple text file download -->
   <script src="script.js"></script>
 </body>
 </html>

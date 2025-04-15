@@ -22,12 +22,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const runAiSearchBtn = document.getElementById('run-ai-search');
   const aiResults = document.getElementById('ai-results');
   const aiResultsContent = document.getElementById('ai-results-content');
-  const formIframe = document.querySelector('.pdf-dropdown iframe');
+
+  // RAG-related DOM elements
+  const ragDropdownHeader = document.querySelector('.rag-dropdown .dropdown-header');
+  const ragDropdownContent = document.querySelector('.rag-dropdown .dropdown-content');
+  const documentUpload = document.getElementById('document-upload');
+  const uploadTrigger = document.getElementById('upload-trigger');
+  const fileList = document.getElementById('file-list');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const sendQuestionBtn = document.getElementById('send-question');
+  const clearDocumentsBtn = document.getElementById('clear-documents');
 
   // Application state for Sheet data and Gemini API key
   let sheetData = { headers: [], data: [] };
   let currentSelectedRow = null;
   let geminiApiKey = ""; // Stores the user-supplied Gemini API key
+  let uploadedDocuments = []; // Stores information about uploaded documents
+  let documentTexts = []; // Stores the extracted text from the documents
 
   // Set up event listeners
   connectBtn.addEventListener('click', connectToSheet);
@@ -35,6 +47,20 @@ document.addEventListener('DOMContentLoaded', function() {
   aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
+
+  // RAG-related event listeners
+  uploadTrigger.addEventListener('click', function() {
+    documentUpload.click();
+  });
+
+  documentUpload.addEventListener('change', handleFileUpload);
+  sendQuestionBtn.addEventListener('click', sendQuestion);
+  chatInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      sendQuestion();
+    }
+  });
+  clearDocumentsBtn.addEventListener('click', clearDocuments);
 
   // Event listener to store the Gemini API key when the user clicks the button
   setGeminiApiKeyBtn.addEventListener('click', function() {
@@ -46,31 +72,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Toggle PDF dropdown in the detail view
-  const pdfDropdownHeader = document.querySelector('.pdf-dropdown .dropdown-header');
-  const pdfDropdownContent = document.querySelector('.pdf-dropdown .dropdown-content');
-  pdfDropdownHeader.addEventListener('click', function() {
-    const isVisible = pdfDropdownContent.style.display !== 'none';
-    pdfDropdownContent.style.display = isVisible ? 'none' : 'block';
+  // Toggle RAG dropdown in the detail view
+  ragDropdownHeader.addEventListener('click', function() {
+    const isVisible = ragDropdownContent.style.display !== 'none';
+    ragDropdownContent.style.display = isVisible ? 'none' : 'block';
     const icon = this.querySelector('i');
     icon.classList.toggle('fa-chevron-down', isVisible);
     icon.classList.toggle('fa-chevron-up', !isVisible);
-    
-    // If form is open and a row is selected, try populating the form after a short delay
-    if (!isVisible && currentSelectedRow) {
-      setTimeout(() => {
-        populateGoogleForm(currentSelectedRow);
-      }, 1000);
-    }
   });
-
-  if (formIframe) {
-    formIframe.addEventListener('load', function() {
-      if (currentSelectedRow) {
-        populateGoogleForm(currentSelectedRow);
-      }
-    });
-  }
 
   window.addEventListener('click', function(event) {
     if (event.target === aiModal) {
@@ -196,9 +205,9 @@ document.addEventListener('DOMContentLoaded', function() {
         item.classList.remove('active');
       });
       titleItem.classList.add('active');
-      if (pdfDropdownContent.style.display !== 'none' && formIframe) {
-        setTimeout(() => { populateGoogleForm(row); }, 500);
-      }
+      
+      // When selecting a new item, clear documents and chat history
+      clearDocuments();
     });
     
     return titleItem;
@@ -250,145 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     return escapeHtml(valueStr);
-  }
-
-  // Populate the Google Form in the iframe with data from a record
-  function populateGoogleForm(row) {
-    if (!formIframe) return;
-    try {
-      const iframeDoc = formIframe.contentDocument || formIframe.contentWindow.document;
-      if (!iframeDoc) {
-        console.warn('Cannot access iframe content due to cross-origin policy.');
-        tryGoogleFormsURLParameters(row);
-        return;
-      }
-      
-      const inputs = iframeDoc.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
-      inputs.forEach(input => {
-        const fieldName = getFieldName(input, iframeDoc);
-        if (!fieldName) return;
-        const matchingData = findMatchingData(fieldName, row);
-        if (matchingData) {
-          if (input.tagName === 'SELECT') {
-            setSelectValue(input, matchingData);
-          } else {
-            input.value = matchingData;
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
-          }
-        }
-      });
-      
-      const radioButtons = iframeDoc.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-      radioButtons.forEach(radio => {
-        const fieldName = getFieldName(radio, iframeDoc);
-        if (!fieldName) return;
-        const matchingData = findMatchingData(fieldName, row);
-        if (matchingData) {
-          const radioValue = radio.value.toLowerCase();
-          const matchingValue = String(matchingData).toLowerCase();
-          if (radioValue === matchingValue || matchingValue.includes(radioValue) || radioValue.includes(matchingValue)) {
-            radio.checked = true;
-            const event = new Event('change', { bubbles: true });
-            radio.dispatchEvent(event);
-          }
-        }
-      });
-      
-    } catch (error) {
-      console.error('Error while populating Google Form:', error);
-      tryGoogleFormsURLParameters(row);
-    }
-  }
-
-  // Attempt to extract a field label from an input element in the iframe
-  function getFieldName(input, doc) {
-    if (input.getAttribute('aria-label')) {
-      return input.getAttribute('aria-label').trim();
-    }
-    if (input.name) {
-      return input.name.replace(/entry\.\d+/, '').replace(/[-_]/g, ' ').trim();
-    }
-    if (input.id) {
-      const label = doc.querySelector(`label[for="${input.id}"]`);
-      if (label) {
-        return label.textContent.trim();
-      }
-    }
-    let element = input.parentElement;
-    while (element && element.tagName !== 'FORM') {
-      const questionElement = element.querySelector('.freebirdFormviewerComponentsQuestionBaseTitle');
-      if (questionElement) {
-        return questionElement.textContent.trim();
-      }
-      const possibleLabels = element.querySelectorAll('div');
-      for (const div of possibleLabels) {
-        if (div.textContent && div.textContent.length > 0 && div.textContent.length < 100) {
-          return div.textContent.trim();
-        }
-      }
-      element = element.parentElement;
-    }
-    return null;
-  }
-
-  // Search for matching data in a record based on a field name
-  function findMatchingData(fieldName, row) {
-    const normalizedFieldName = fieldName.toLowerCase().replace(/[-_\s]+/g, '');
-    for (const [key, value] of Object.entries(row)) {
-      if (key.toLowerCase() === normalizedFieldName) {
-        return value;
-      }
-    }
-    for (const [key, value] of Object.entries(row)) {
-      const normalizedKey = key.toLowerCase().replace(/[-_\s]+/g, '');
-      if (normalizedKey.includes(normalizedFieldName) || normalizedFieldName.includes(normalizedKey)) {
-        return value;
-      }
-    }
-    return null;
-  }
-
-  // Set the selected value of a <select> element
-  function setSelectValue(selectElement, value) {
-    const options = selectElement.options;
-    const valueString = String(value).toLowerCase();
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].value.toLowerCase() === valueString || options[i].text.toLowerCase() === valueString) {
-        selectElement.selectedIndex = i;
-        const event = new Event('change', { bubbles: true });
-        selectElement.dispatchEvent(event);
-        return;
-      }
-    }
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].value.toLowerCase().includes(valueString) ||
-          valueString.includes(options[i].value.toLowerCase()) ||
-          options[i].text.toLowerCase().includes(valueString) ||
-          valueString.includes(options[i].text.toLowerCase())) {
-        selectElement.selectedIndex = i;
-        const event = new Event('change', { bubbles: true });
-        selectElement.dispatchEvent(event);
-        return;
-      }
-    }
-  }
-
-  // Fallback method for populating Google Forms using URL parameters
-  function tryGoogleFormsURLParameters(row) {
-    if (!formIframe.src.includes('docs.google.com/forms')) {
-      return;
-    }
-    const formUrl = new URL(formIframe.src);
-    const baseUrl = formUrl.origin + formUrl.pathname;
-    console.log('Cross-origin restrictions prevent direct form population. Consider using Google Forms prefill URL parameters.');
-    /*
-    const prefillParams = new URLSearchParams();
-    prefillParams.append('entry.123456789', row['Title']);
-    prefillParams.append('entry.987654321', row['Description']);
-    const prefillUrl = `${baseUrl}?${prefillParams.toString()}`;
-    formIframe.src = prefillUrl;
-    */
   }
 
   // Display an error message in the UI
@@ -465,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const data = await response.json();
       
-      // Fixed: Extract text content from Gemini API response
+      // Extract text content from Gemini API response
       if (data.candidates && data.candidates.length > 0 && 
           data.candidates[0].content && 
           data.candidates[0].content.parts && 
@@ -481,6 +351,217 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Error calling Gemini API:', error);
       aiResultsContent.innerHTML = `<p>Error: ${error.message}. Please try again later.</p>`;
     }
+  }
+
+  // RAG Implementation - Handle file upload
+  async function handleFileUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Process each uploaded file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Check if file is already uploaded
+      if (uploadedDocuments.some(doc => doc.name === file.name)) {
+        continue; // Skip duplicates
+      }
+      
+      try {
+        // Read the file text
+        const text = await readFileAsText(file);
+        
+        // Store the document information
+        uploadedDocuments.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          text: text
+        });
+        
+        // Extract the document text for RAG
+        documentTexts.push(text);
+        
+        // Create a file item in the UI
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+          <span>${escapeHtml(file.name)}</span>
+          <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
+        `;
+        
+        // Add click handler for remove icon
+        fileItem.querySelector('i').addEventListener('click', function() {
+          const filename = this.getAttribute('data-filename');
+          removeDocument(filename);
+          fileItem.remove();
+        });
+        
+        fileList.appendChild(fileItem);
+      } catch (error) {
+        console.error('Error processing file:', error);
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message ai-message';
+        errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
+        chatMessages.appendChild(errorMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    }
+    
+    // Reset the file input to allow uploading the same file again
+    event.target.value = '';
+    
+    // Add a confirmation message to the chat
+    if (uploadedDocuments.length > 0) {
+      const message = document.createElement('div');
+      message.className = 'message ai-message';
+      message.textContent = `${uploadedDocuments.length} document(s) uploaded. You can now ask questions about them.`;
+      chatMessages.appendChild(message);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  }
+
+  // Read a file and return its contents as text
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        resolve(e.target.result);
+      };
+      
+      reader.onerror = function(e) {
+        reject(new Error("Failed to read file"));
+      };
+      
+      // Read the file as text
+      reader.readAsText(file);
+    });
+  }
+
+  // Remove a document from the uploaded documents array
+  function removeDocument(filename) {
+    const index = uploadedDocuments.findIndex(doc => doc.name === filename);
+    if (index !== -1) {
+      // Remove document and its text
+      documentTexts.splice(index, 1);
+      uploadedDocuments.splice(index, 1);
+    }
+  }
+
+  // Clear all uploaded documents
+  function clearDocuments() {
+    uploadedDocuments = [];
+    documentTexts = [];
+    fileList.innerHTML = '';
+    chatMessages.innerHTML = '<div class="message ai-message">Upload documents and ask questions about this record. I\'ll use the documents to provide detailed answers.</div>';
+  }
+
+  // Send a question to the Gemini API using RAG context
+  async function sendQuestion() {
+    const question = chatInput.value.trim();
+    if (!question) return;
+    
+    // Clear the input field
+    chatInput.value = '';
+    
+    // Add the user's question to the chat
+    const userMessageEl = document.createElement('div');
+    userMessageEl.className = 'message user-message';
+    userMessageEl.textContent = question;
+    chatMessages.appendChild(userMessageEl);
+    
+    // Add a loading message
+    const loadingMessageEl = document.createElement('div');
+    loadingMessageEl.className = 'message ai-message';
+    loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
+    chatMessages.appendChild(loadingMessageEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Check if there's a Gemini API key
+    if (!geminiApiKey) {
+      loadingMessageEl.innerHTML = 'Please set your Gemini API key.';
+      return;
+    }
+    
+    try {
+      // Build context from uploaded documents and selected row data
+      let context = '';
+      
+      // Add row data if available
+      if (currentSelectedRow) {
+        context += "RECORD INFORMATION:\n";
+        for (const header of sheetData.headers) {
+          if (currentSelectedRow[header]) {
+            context += `${header}: ${currentSelectedRow[header]}\n`;
+          }
+        }
+        context += "\n";
+      }
+      
+      // Add document content
+      if (documentTexts.length > 0) {
+        context += "DOCUMENT CONTENT:\n";
+        documentTexts.forEach((text, index) => {
+          context += `Document ${index + 1}: ${text}\n\n`;
+        });
+      }
+      
+      // Create prompt with context
+      const fullPrompt = `You are an assistant helping with questions about a specific record ${
+        documentTexts.length > 0 ? 'and uploaded documents' : ''
+      }. 
+      
+${context}
+
+Based on the provided information, answer the following question:
+${question}
+
+Only provide information found in the record or uploaded documents. If the answer is not in the provided information, say "I don't have enough information to answer that question."`;
+      
+      // Build the payload for Gemini API
+      const payload = {
+        contents: [{
+          parts: [{ text: fullPrompt }]
+        }]
+      };
+      
+      // Construct the URL with the user-supplied Gemini API key
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Replace the loading message with the response
+      if (data.candidates && data.candidates.length > 0 && 
+          data.candidates[0].content && 
+          data.candidates[0].content.parts && 
+          data.candidates[0].content.parts.length > 0) {
+        
+        const responseText = data.candidates[0].content.parts[0].text;
+        loadingMessageEl.innerHTML = responseText;
+      } else {
+        loadingMessageEl.textContent = 'No response received from API.';
+        console.error('Unexpected API response structure:', data);
+      }
+      
+    } catch (error) {
+      console.error('Error calling Gemini API for RAG:', error);
+      loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
+    }
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   // Utility function to escape HTML special characters

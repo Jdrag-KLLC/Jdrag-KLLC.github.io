@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const geminiApiKeyInput = document.getElementById('gemini-api-key');
   const setGeminiApiKeyBtn = document.getElementById('set-gemini-api-key');
 
-  // Other existing DOM elements
+  // Other DOM elements
   const apiKeyContainer = document.getElementById('api-key-container');
   const searchContainer = document.getElementById('search-container');
   const searchInput = document.getElementById('search-input');
@@ -35,14 +35,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const clearDocumentsBtn = document.getElementById('clear-documents');
   const downloadChatBtn = document.getElementById('download-chat');
 
-  // Application state for Sheet data and Gemini API key
+  // Application state for Sheet data and API key
   let sheetData = { headers: [], data: [] };
   let currentSelectedRow = null;
-  let geminiApiKey = ""; // Stores the user-supplied Gemini API key
-  let uploadedDocuments = []; // Stores information about uploaded documents
-  let documentTexts = []; // Stores the extracted text from the documents
+  let geminiApiKey = "";
+  let uploadedDocuments = []; // Array to store file metadata and extracted text
+  let documentTexts = [];   // Context texts for RAG
 
-  // Set up event listeners
+  // Event listeners for Sheet connection and AI
   connectBtn.addEventListener('click', connectToSheet);
   searchInput.addEventListener('input', renderFilteredData);
   aiSearchBtn.addEventListener('click', openAiModal);
@@ -53,7 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
   uploadTrigger.addEventListener('click', function() {
     documentUpload.click();
   });
-
   documentUpload.addEventListener('change', handleFileUpload);
   sendQuestionBtn.addEventListener('click', sendQuestion);
   chatInput.addEventListener('keypress', function(e) {
@@ -62,11 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   clearDocumentsBtn.addEventListener('click', clearDocuments);
-  
-  // Add event listener for download chat history button
   downloadChatBtn.addEventListener('click', downloadChatHistory);
 
-  // Event listener to store the Gemini API key when the user clicks the button
   setGeminiApiKeyBtn.addEventListener('click', function() {
     geminiApiKey = geminiApiKeyInput.value.trim();
     if (geminiApiKey) {
@@ -76,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Toggle RAG dropdown in the detail view
   ragDropdownHeader.addEventListener('click', function() {
     const isVisible = ragDropdownContent.style.display !== 'none';
     ragDropdownContent.style.display = isVisible ? 'none' : 'block';
@@ -91,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Connect to Google Sheet and fetch data
+  // Google Sheet connection and processing functions
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
     if (!sheetId) {
@@ -133,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Process the sheet's JSON data
   function processSheetData(jsonData) {
     if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
       throw new Error('No data found in the sheet');
@@ -154,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function() {
     sheetData = { headers, data };
   }
 
-  // Filter and render the data based on user input
   function renderFilteredData() {
     const searchTerm = searchInput?.value?.toLowerCase() || '';
     const filteredData = sheetData.data.filter(row => {
@@ -170,13 +163,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (filteredData.length === 0) {
       titlesContainer.innerHTML = '<div class="no-results">No matching records found</div>';
     } else {
-      filteredData.forEach((row, index) => {
+      filteredData.forEach((row) => {
         titlesContainer.appendChild(createTitleItem(row));
       });
     }
   }
 
-  // Create a clickable title item for each record
   function createTitleItem(row) {
     const titleItem = document.createElement('div');
     titleItem.className = 'title-item';
@@ -205,19 +197,14 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target.tagName === 'A') return;
       currentSelectedRow = row;
       detailData.innerHTML = generateDetailContent(row);
-      document.querySelectorAll('.title-item').forEach(item => {
-        item.classList.remove('active');
-      });
+      document.querySelectorAll('.title-item').forEach(item => item.classList.remove('active'));
       titleItem.classList.add('active');
-      
-      // When selecting a new item, clear documents and chat history
       clearDocuments();
     });
     
     return titleItem;
   }
 
-  // Generate the detailed HTML content for a record
   function generateDetailContent(row) {
     let html = '<div class="data-grid">';
     sheetData.headers.forEach(header => {
@@ -230,60 +217,47 @@ document.addEventListener('DOMContentLoaded', function() {
     return html;
   }
 
-  // Format special fields (e.g., URLs, priority, tags)
   function renderSpecialFields(header, value) {
     if (!value) return '';
-    
     const valueStr = String(value);
     const urlPattern = /^(https?:\/\/[^\s]+)$/;
-    
     if (urlPattern.test(valueStr)) {
       return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
     }
-    
     const headerLower = header.toLowerCase();
     if (headerLower === 'priority') {
       const priority = valueStr.toLowerCase();
       let priorityClass = '';
-      if (priority.includes('high')) {
-        priorityClass = 'priority-high';
-      } else if (priority.includes('medium') || priority.includes('med')) {
-        priorityClass = 'priority-medium';
-      } else if (priority.includes('low')) {
-        priorityClass = 'priority-low';
-      }
+      if (priority.includes('high')) priorityClass = 'priority-high';
+      else if (priority.includes('medium') || priority.includes('med')) priorityClass = 'priority-medium';
+      else if (priority.includes('low')) priorityClass = 'priority-low';
       if (priorityClass) {
         return `<span class="tag ${priorityClass}">${escapeHtml(valueStr)}</span>`;
       }
     }
-    
     if (headerLower === 'tags' && valueStr.includes(',')) {
       const tags = valueStr.split(',').map(tag => tag.trim());
       return tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join(' ');
     }
-    
     return escapeHtml(valueStr);
   }
 
-  // Display an error message in the UI
   function showError(message) {
     errorTextElement.textContent = message;
     errorElement.style.display = 'flex';
   }
 
-  // Open the AI search modal
+  // AI Modal functions
   function openAiModal() {
     aiModal.style.display = 'block';
     aiPromptInput.focus();
     aiResults.style.display = 'none';
   }
 
-  // Close the AI search modal
   function closeAiModal() {
     aiModal.style.display = 'none';
   }
 
-  // Perform an AI search using the Gemini API endpoint with context from the selected record (if any)
   async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
@@ -296,7 +270,6 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    // Build a context string from the currently selected row (if available)
     let contextText = "";
     if (currentSelectedRow) {
       contextText = "Record Information:\n";
@@ -307,29 +280,23 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Combine the context with the user query.
-    // If a record is selected, instruct the API to answer based on that record.
     let fullPrompt = aiPrompt;
     if (contextText) {
       fullPrompt = `Based on the following record information:\n${contextText}\nAnswer the following question: ${aiPrompt}`;
     }
     
-    // Build the payload to match the Gemini API request sample
     const payload = {
       contents: [{
         parts: [{ text: fullPrompt }]
       }]
     };
     
-    // Construct the URL with the user-supplied Gemini API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
     
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       
@@ -339,12 +306,10 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const data = await response.json();
       
-      // Extract text content from Gemini API response
       if (data.candidates && data.candidates.length > 0 && 
           data.candidates[0].content && 
           data.candidates[0].content.parts && 
           data.candidates[0].content.parts.length > 0) {
-        
         const responseText = data.candidates[0].content.parts[0].text;
         aiResultsContent.innerHTML = `<p>${responseText}</p>`;
       } else {
@@ -357,25 +322,84 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // RAG Implementation - Handle file upload
+  // --- UPDATED FILE UPLOAD AND PARSING FUNCTIONS ---
+
+  // Function to extract text from a file based on its type.
+  async function extractFileText(file) {
+    // For text-based files
+    if (file.type.startsWith("text/") || file.name.match(/\.(txt|csv|json)$/i)) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          resolve(e.target.result);
+        };
+        reader.onerror = function() {
+          reject(new Error("Failed to read file as text"));
+        };
+        reader.readAsText(file);
+      });
+    }
+    // For PDFs using PDF.js
+    else if (file.type === "application/pdf" || file.name.match(/\.(pdf)$/i)) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map(item => item.str);
+          text += strings.join(" ") + "\n";
+        }
+        return text;
+      } catch (e) {
+        throw new Error("Failed to extract text from PDF: " + e.message);
+      }
+    }
+    // For DOCX files using Mammoth.js
+    else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+             file.name.match(/\.(docx)$/i)) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        return result.value;
+      } catch (e) {
+        throw new Error("Failed to extract text from DOCX: " + e.message);
+      }
+    }
+    // For legacy DOC files, not supported
+    else if (file.type === "application/msword" || file.name.match(/\.(doc)$/i)) {
+      throw new Error("DOC file format is not supported for text extraction.");
+    }
+    // Fallback: attempt to read the file as text
+    else {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          resolve(e.target.result);
+        };
+        reader.onerror = function() {
+          reject(new Error("Failed to read file as text (fallback)"));
+        };
+        reader.readAsText(file);
+      });
+    }
+  }
+
+  // Updated file upload handler.
   async function handleFileUpload(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    // Process each uploaded file
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
-      // Check if file is already uploaded
-      if (uploadedDocuments.some(doc => doc.name === file.name)) {
-        continue; // Skip duplicates
-      }
+      // Skip duplicates.
+      if (uploadedDocuments.some(doc => doc.name === file.name)) continue;
       
       try {
-        // Read the file text
-        const text = await readFileAsText(file);
+        const text = await extractFileText(file);
         
-        // Store the document information
         uploadedDocuments.push({
           name: file.name,
           type: file.type,
@@ -383,10 +407,8 @@ document.addEventListener('DOMContentLoaded', function() {
           text: text
         });
         
-        // Extract the document text for RAG
         documentTexts.push(text);
         
-        // Create a file item in the UI
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.innerHTML = `
@@ -394,7 +416,6 @@ document.addEventListener('DOMContentLoaded', function() {
           <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
         `;
         
-        // Add click handler for remove icon
         fileItem.querySelector('i').addEventListener('click', function() {
           const filename = this.getAttribute('data-filename');
           removeDocument(filename);
@@ -412,10 +433,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Reset the file input to allow uploading the same file again
     event.target.value = '';
     
-    // Add a confirmation message to the chat
     if (uploadedDocuments.length > 0) {
       const message = document.createElement('div');
       message.className = 'message ai-message';
@@ -425,35 +444,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Read a file and return its contents as text
-  function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = function(e) {
-        resolve(e.target.result);
-      };
-      
-      reader.onerror = function(e) {
-        reject(new Error("Failed to read file"));
-      };
-      
-      // Read the file as text
-      reader.readAsText(file);
-    });
-  }
-
-  // Remove a document from the uploaded documents array
   function removeDocument(filename) {
     const index = uploadedDocuments.findIndex(doc => doc.name === filename);
     if (index !== -1) {
-      // Remove document and its text
       documentTexts.splice(index, 1);
       uploadedDocuments.splice(index, 1);
     }
   }
 
-  // Clear all uploaded documents
   function clearDocuments() {
     uploadedDocuments = [];
     documentTexts = [];
@@ -461,141 +459,28 @@ document.addEventListener('DOMContentLoaded', function() {
     chatMessages.innerHTML = '<div class="message ai-message">Upload documents and ask questions about this record. I\'ll use the documents to provide detailed answers.</div>';
   }
 
-  // Send a question to the Gemini API using RAG context
-  async function sendQuestion() {
-    const question = chatInput.value.trim();
-    if (!question) return;
-    
-    // Clear the input field
-    chatInput.value = '';
-    
-    // Add the user's question to the chat
-    const userMessageEl = document.createElement('div');
-    userMessageEl.className = 'message user-message';
-    userMessageEl.textContent = question;
-    chatMessages.appendChild(userMessageEl);
-    
-    // Add a loading message
-    const loadingMessageEl = document.createElement('div');
-    loadingMessageEl.className = 'message ai-message';
-    loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
-    chatMessages.appendChild(loadingMessageEl);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    // Check if there's a Gemini API key
-    if (!geminiApiKey) {
-      loadingMessageEl.innerHTML = 'Please set your Gemini API key.';
-      return;
-    }
-    
-    try {
-      // Build context from uploaded documents and selected row data
-      let context = '';
-      
-      // Add row data if available
-      if (currentSelectedRow) {
-        context += "RECORD INFORMATION:\n";
-        for (const header of sheetData.headers) {
-          if (currentSelectedRow[header]) {
-            context += `${header}: ${currentSelectedRow[header]}\n`;
-          }
-        }
-        context += "\n";
-      }
-      
-      // Add document content
-      if (documentTexts.length > 0) {
-        context += "DOCUMENT CONTENT:\n";
-        documentTexts.forEach((text, index) => {
-          context += `Document ${index + 1}: ${text}\n\n`;
-        });
-      }
-      
-      // Create prompt with context
-      const fullPrompt = `You are an assistant helping with questions about a specific record ${
-        documentTexts.length > 0 ? 'and uploaded documents' : ''
-      }. 
-      
-${context}
-
-Based on the provided information, answer the following question:
-${question}
-
-Only provide information found in the record or uploaded documents. If the answer is not in the provided information, say "I don't have enough information to answer that question."`;
-      
-      // Build the payload for Gemini API
-      const payload = {
-        contents: [{
-          parts: [{ text: fullPrompt }]
-        }]
-      };
-      
-      // Construct the URL with the user-supplied Gemini API key
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Replace the loading message with the response
-      if (data.candidates && data.candidates.length > 0 && 
-          data.candidates[0].content && 
-          data.candidates[0].content.parts && 
-          data.candidates[0].content.parts.length > 0) {
-        
-        const responseText = data.candidates[0].content.parts[0].text;
-        loadingMessageEl.innerHTML = responseText;
-      } else {
-        loadingMessageEl.textContent = 'No response received from API.';
-        console.error('Unexpected API response structure:', data);
-      }
-      
-    } catch (error) {
-      console.error('Error calling Gemini API for RAG:', error);
-      loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
-    }
-    
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  // Function to download chat history as a text file
+  // Function to download chat history
   function downloadChatHistory() {
-    // Get all messages from the chat container
     const messages = document.querySelectorAll('#chat-messages .message');
     if (messages.length === 0) {
       alert('No chat messages to download.');
       return;
     }
     
-    // Get the title of the current selected row for filename, or use a default
     let titleForFilename = 'Untitled Entry';
     if (currentSelectedRow) {
       const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
       titleForFilename = currentSelectedRow[titleField] || 'Untitled Entry';
-      // Clean up the title to make it suitable for a filename
       titleForFilename = titleForFilename.replace(/[^\w\s-]/g, '').trim().substring(0, 50);
     }
     
-    // Format current date and time for the chat log
     const now = new Date();
     const dateString = now.toLocaleDateString();
     const timeString = now.toLocaleTimeString();
     
-    // Prepare the chat content with header
     let chatContent = `Chat History for: ${titleForFilename}\n`;
     chatContent += `Generated on: ${dateString} at ${timeString}\n\n`;
     
-    // Process each message and add to content
     messages.forEach((message, index) => {
       const timestamp = new Date().toLocaleTimeString();
       const isUserMessage = message.classList.contains('user-message');
@@ -603,7 +488,6 @@ Only provide information found in the record or uploaded documents. If the answe
       chatContent += `[${index + 1}] ${sender} (${timestamp}):\n${message.textContent.trim()}\n\n`;
     });
     
-    // Create a list of uploaded documents if any
     if (uploadedDocuments && uploadedDocuments.length > 0) {
       chatContent += '\n--- Uploaded Documents ---\n';
       uploadedDocuments.forEach((doc, index) => {
@@ -611,10 +495,7 @@ Only provide information found in the record or uploaded documents. If the answe
       });
     }
     
-    // Create a Blob with the chat content
     const blob = new Blob([chatContent], { type: 'text/plain' });
-    
-    // Create a download link and trigger the download
     const downloadLink = document.createElement('a');
     downloadLink.href = URL.createObjectURL(blob);
     downloadLink.download = `${titleForFilename} chat results.txt`;
@@ -623,14 +504,12 @@ Only provide information found in the record or uploaded documents. If the answe
     document.body.removeChild(downloadLink);
   }
 
-  // Helper function to format file size
   function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' bytes';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  // Utility function to escape HTML special characters
   function escapeHtml(unsafe) {
     return unsafe
       .toString()

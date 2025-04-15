@@ -372,63 +372,77 @@ async function handleFileUpload(event) {
   let successCount = 0;
   let failCount = 0;
   
-  // Process each uploaded file
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    
-    // Check if file is already uploaded
-    if (uploadedDocuments.some(doc => doc.name === file.name)) {
-      failCount++;
-      continue; // Skip duplicates
-    }
-    
-    try {
-      // Provide feedback about supported file types
-      const supportedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/csv', 'application/json'];
+  // Define supported file types
+  const supportedTypes = [
+    'text/plain', 
+    'application/pdf', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+    'text/csv', 
+    'application/json'
+  ];
+  
+  try {
+    // Process each file sequentially to avoid memory issues
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      processingMessage.textContent = `Processing file ${i+1} of ${files.length}: ${file.name}`;
       
-      if (!supportedTypes.includes(file.type) && !file.type.includes('text/')) {
-        processingMessage.textContent = `Processing files... Warning: ${file.name} has type "${file.type}" which may not be fully supported.`;
+      // Check if file is already uploaded
+      if (uploadedDocuments.some(doc => doc.name === file.name)) {
+        failCount++;
+        continue; // Skip duplicates
       }
       
-      // Read the file text
-      const text = await readFileAsText(file);
+      // Warning for unsupported file types
+      if (!supportedTypes.includes(file.type) && !file.type.includes('text/')) {
+        console.warn(`File ${file.name} has type "${file.type}" which may not be fully supported.`);
+      }
       
-      // Store the document information
-      uploadedDocuments.push({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        text: text
-      });
-      
-      // Extract the document text for RAG
-      documentTexts.push(text);
-      
-      // Create a file item in the UI
-      const fileItem = document.createElement('div');
-      fileItem.className = 'file-item';
-      fileItem.innerHTML = `
-        <span>${escapeHtml(file.name)}</span>
-        <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
-      `;
-      
-      // Add click handler for remove icon
-      fileItem.querySelector('i').addEventListener('click', function() {
-        const filename = this.getAttribute('data-filename');
-        removeDocument(filename);
-        fileItem.remove();
-      });
-      
-      fileList.appendChild(fileItem);
-      successCount++;
-    } catch (error) {
-      console.error('Error processing file:', error);
-      failCount++;
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'message ai-message';
-      errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
-      chatMessages.appendChild(errorMessage);
+      try {
+        // Read the file text
+        const text = await readFileAsText(file);
+        
+        // Store the document information
+        uploadedDocuments.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          text: text
+        });
+        
+        // Extract the document text for RAG
+        documentTexts.push(text);
+        
+        // Create a file item in the UI
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+          <span>${escapeHtml(file.name)}</span>
+          <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
+        `;
+        
+        // Add click handler for remove icon
+        fileItem.querySelector('i').addEventListener('click', function() {
+          const filename = this.getAttribute('data-filename');
+          removeDocument(filename);
+          fileItem.remove();
+        });
+        
+        fileList.appendChild(fileItem);
+        successCount++;
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        failCount++;
+        
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message ai-message';
+        errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
+        chatMessages.appendChild(errorMessage);
+      }
     }
+  } catch (err) {
+    console.error('Error in file upload process:', err);
+    processingMessage.textContent = `Error in upload process: ${err.message}`;
   }
   
   // Reset the file input to allow uploading the same file again
@@ -452,7 +466,7 @@ async function handleFileUpload(event) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-  // Read a file and return its contents as text based on file type
+// Read a file and return its contents as text based on file type
 function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     // For text files, use FileReader directly
@@ -478,29 +492,54 @@ function readFileAsText(file) {
       reader.onload = function(e) {
         const typedArray = new Uint8Array(e.target.result);
         
-        // Load the PDF
-        pdfjsLib.getDocument(typedArray).promise.then(pdf => {
-          let textContent = '';
-          const numPages = pdf.numPages;
-          let loadedPages = 0;
-          
-          // Extract text from each page
-          for (let i = 1; i <= numPages; i++) {
-            pdf.getPage(i).then(page => {
-              page.getTextContent().then(content => {
-                // Concatenate the text items
-                content.items.forEach(item => {
-                  textContent += item.str + ' ';
+        // Make sure pdfjsLib is available
+        if (typeof pdfjsLib === 'undefined') {
+          reject(new Error("PDF.js library not loaded"));
+          return;
+        }
+        
+        // Load the PDF with proper error handling
+        pdfjsLib.getDocument({data: typedArray}).promise
+          .then(pdf => {
+            let textContent = '';
+            const numPages = pdf.numPages;
+            let loadedPages = 0;
+            
+            // For small PDFs, just extract sequentially to avoid memory issues
+            const extractPage = (pageNum) => {
+              if (pageNum > numPages) {
+                resolve(textContent);
+                return;
+              }
+              
+              pdf.getPage(pageNum).then(page => {
+                page.getTextContent().then(content => {
+                  // Concatenate the text items
+                  content.items.forEach(item => {
+                    textContent += item.str + ' ';
+                  });
+                  
+                  loadedPages++;
+                  processingMessage.textContent = `Processing PDF: page ${loadedPages}/${numPages}`;
+                  
+                  // Process next page or resolve if done
+                  extractPage(pageNum + 1);
+                }).catch(err => {
+                  console.error(`Error extracting text from page ${pageNum}:`, err);
+                  // Continue with next page despite errors
+                  extractPage(pageNum + 1);
                 });
-                
-                loadedPages++;
-                if (loadedPages === numPages) {
-                  resolve(textContent);
-                }
-              }).catch(err => reject(new Error("Failed to extract PDF text: " + err.message)));
-            });
-          }
-        }).catch(err => reject(new Error("Failed to load PDF: " + err.message)));
+              }).catch(err => {
+                console.error(`Error getting page ${pageNum}:`, err);
+                // Continue with next page despite errors
+                extractPage(pageNum + 1);
+              });
+            };
+            
+            // Start extracting from page 1
+            extractPage(1);
+          })
+          .catch(err => reject(new Error("Failed to load PDF: " + err.message)));
       };
       
       reader.onerror = function() {
@@ -516,6 +555,12 @@ function readFileAsText(file) {
       const reader = new FileReader();
       
       reader.onload = function(e) {
+        // Make sure mammoth is available
+        if (typeof mammoth === 'undefined') {
+          reject(new Error("Mammoth.js library not loaded"));
+          return;
+        }
+        
         mammoth.extractRawText({arrayBuffer: e.target.result})
           .then(result => {
             resolve(result.value);
@@ -551,6 +596,9 @@ function readFileAsText(file) {
     reader.readAsText(file);
   });
 }
+
+// Global reference to processing message element for updating during long operations
+let processingMessage = null;
 
   // Remove a document from the uploaded documents array
   function removeDocument(filename) {

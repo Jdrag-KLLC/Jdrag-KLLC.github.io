@@ -46,16 +46,77 @@
       flex: 1;
       margin-bottom: 20px;
     }
-    /* PDF dropdown container */
-    .pdf-dropdown {
+    /* RAG dropdown container */
+    .rag-dropdown {
       width: 100%;
     }
-    /* General styling improvements */
-    .dropdown-content {
-      width: 100%;
+    /* File upload area */
+    .file-upload-area {
+      border: 2px dashed #ccc;
+      padding:.20px;
+      text-align: center;
+      margin-bottom: 16px;
+      border-radius: 8px;
     }
-    .dropdown-content iframe {
-      max-width: 100%;
+    /* Chat container */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 400px;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background-color: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 16px;
+      max-width: 80%;
+    }
+    .user-message {
+      background-color: #DCF8C6;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .ai-message {
+      background-color: #ECECEC;
+      align-self: flex-start;
+    }
+    .chat-input-container {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    /* File list styles */
+    .file-list {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .file-item {
+      background-color: #f0f0f0;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .file-item i {
+      cursor: pointer;
+      color: #ff5555;
     }
     /* Helper for small screens */
     @media (max-width: 768px) {
@@ -95,7 +156,7 @@
         </p>
       </div>
       
-      <!-- New container for Gemini API Key input -->
+      <!-- Container for Gemini API Key input -->
       <div id="gemini-api-container" style="margin-top: 20px;">
         <div class="input-group">
           <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key here" class="input-control">
@@ -150,15 +211,34 @@
           <!-- Detail content goes here -->
         </div>
         
-        <!-- PDF Dropdown embedded form anchored at the bottom -->
-        <div class="pdf-dropdown">
+        <!-- RAG Document Interaction - replaces PDF Dropdown -->
+        <div class="rag-dropdown">
           <div class="dropdown-header">
-            Input pdf's <i class="fas fa-chevron-down"></i>
+            Ask Questions <i class="fas fa-chevron-down"></i>
           </div>
           <div class="dropdown-content" style="display: none;">
-            <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe8b3lnhnrjJ98taV-eZgDUsdfauCFYuN_aRZ90F7lhf82FdQ/viewform?embedded=true" width="100%" height="830" frameborder="0" marginheight="0" marginwidth="0">
-              Loading…
-            </iframe>
+            <div class="file-upload-area" id="file-upload-area">
+              <input type="file" id="document-upload" multiple style="display: none;">
+              <button id="upload-trigger" class="btn primary-btn"><i class="fas fa-cloud-upload-alt"></i> Upload Documents</button>
+              <p class="helper-text">Upload files that are relevant to this record</p>
+              <div class="file-list" id="file-list">
+                <!-- Uploaded files will appear here -->
+              </div>
+            </div>
+            
+            <div class="chat-container">
+              <div class="chat-messages" id="chat-messages">
+                <!-- Messages will appear here -->
+                <div class="message ai-message">
+                  Upload documents and ask questions about this record. I'll use the documents to provide detailed answers.
+                </div>
+              </div>
+              <div class="chat-input-container">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about this record...">
+                <button id="send-question" class="btn primary-btn"><i class="fas fa-paper-plane"></i></button>
+                <button id="clear-documents" class="btn primary-btn" style="background-color: #ff5555;"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

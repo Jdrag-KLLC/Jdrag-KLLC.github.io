@@ -358,76 +358,105 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // RAG Implementation - Handle file upload
-  async function handleFileUpload(event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+async function handleFileUpload(event) {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+  
+  // Add a processing message
+  const processingMessage = document.createElement('div');
+  processingMessage.className = 'message ai-message';
+  processingMessage.textContent = 'Processing files...';
+  chatMessages.appendChild(processingMessage);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  // Process each uploaded file
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     
-    // Process each uploaded file
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      // Check if file is already uploaded
-      if (uploadedDocuments.some(doc => doc.name === file.name)) {
-        continue; // Skip duplicates
-      }
-      
-      try {
-        // Read the file text
-        const text = await readFileAsText(file);
-        
-        // Store the document information
-        uploadedDocuments.push({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          text: text
-        });
-        
-        // Extract the document text for RAG
-        documentTexts.push(text);
-        
-        // Create a file item in the UI
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-          <span>${escapeHtml(file.name)}</span>
-          <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
-        `;
-        
-        // Add click handler for remove icon
-        fileItem.querySelector('i').addEventListener('click', function() {
-          const filename = this.getAttribute('data-filename');
-          removeDocument(filename);
-          fileItem.remove();
-        });
-        
-        fileList.appendChild(fileItem);
-      } catch (error) {
-        console.error('Error processing file:', error);
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'message ai-message';
-        errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
-        chatMessages.appendChild(errorMessage);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
+    // Check if file is already uploaded
+    if (uploadedDocuments.some(doc => doc.name === file.name)) {
+      failCount++;
+      continue; // Skip duplicates
     }
     
-    // Reset the file input to allow uploading the same file again
-    event.target.value = '';
-    
-    // Add a confirmation message to the chat
-    if (uploadedDocuments.length > 0) {
-      const message = document.createElement('div');
-      message.className = 'message ai-message';
-      message.textContent = `${uploadedDocuments.length} document(s) uploaded. You can now ask questions about them.`;
-      chatMessages.appendChild(message);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    try {
+      // Provide feedback about supported file types
+      const supportedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/csv', 'application/json'];
+      
+      if (!supportedTypes.includes(file.type) && !file.type.includes('text/')) {
+        processingMessage.textContent = `Processing files... Warning: ${file.name} has type "${file.type}" which may not be fully supported.`;
+      }
+      
+      // Read the file text
+      const text = await readFileAsText(file);
+      
+      // Store the document information
+      uploadedDocuments.push({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        text: text
+      });
+      
+      // Extract the document text for RAG
+      documentTexts.push(text);
+      
+      // Create a file item in the UI
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+      fileItem.innerHTML = `
+        <span>${escapeHtml(file.name)}</span>
+        <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
+      `;
+      
+      // Add click handler for remove icon
+      fileItem.querySelector('i').addEventListener('click', function() {
+        const filename = this.getAttribute('data-filename');
+        removeDocument(filename);
+        fileItem.remove();
+      });
+      
+      fileList.appendChild(fileItem);
+      successCount++;
+    } catch (error) {
+      console.error('Error processing file:', error);
+      failCount++;
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'message ai-message';
+      errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
+      chatMessages.appendChild(errorMessage);
     }
   }
+  
+  // Reset the file input to allow uploading the same file again
+  event.target.value = '';
+  
+  // Update the processing message
+  if (successCount > 0 || failCount > 0) {
+    processingMessage.textContent = `Processing complete: ${successCount} file(s) successfully processed, ${failCount} file(s) failed.`;
+  } else {
+    processingMessage.textContent = 'No files were processed.';
+  }
+  
+  // Add a confirmation message if documents were successfully uploaded
+  if (successCount > 0) {
+    const message = document.createElement('div');
+    message.className = 'message ai-message';
+    message.textContent = `You can now ask questions about the uploaded documents.`;
+    chatMessages.appendChild(message);
+  }
+  
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-  // Read a file and return its contents as text
-  function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
+  // Read a file and return its contents as text based on file type
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    // For text files, use FileReader directly
+    if (file.type === 'text/plain' || file.type === 'text/csv' || file.type === 'application/json' || file.type.includes('text/')) {
       const reader = new FileReader();
       
       reader.onload = function(e) {
@@ -435,13 +464,93 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       
       reader.onerror = function(e) {
-        reject(new Error("Failed to read file"));
+        reject(new Error("Failed to read text file"));
       };
       
-      // Read the file as text
       reader.readAsText(file);
-    });
-  }
+      return;
+    }
+    
+    // For PDF files
+    if (file.type === 'application/pdf') {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const typedArray = new Uint8Array(e.target.result);
+        
+        // Load the PDF
+        pdfjsLib.getDocument(typedArray).promise.then(pdf => {
+          let textContent = '';
+          const numPages = pdf.numPages;
+          let loadedPages = 0;
+          
+          // Extract text from each page
+          for (let i = 1; i <= numPages; i++) {
+            pdf.getPage(i).then(page => {
+              page.getTextContent().then(content => {
+                // Concatenate the text items
+                content.items.forEach(item => {
+                  textContent += item.str + ' ';
+                });
+                
+                loadedPages++;
+                if (loadedPages === numPages) {
+                  resolve(textContent);
+                }
+              }).catch(err => reject(new Error("Failed to extract PDF text: " + err.message)));
+            });
+          }
+        }).catch(err => reject(new Error("Failed to load PDF: " + err.message)));
+      };
+      
+      reader.onerror = function() {
+        reject(new Error("Failed to read PDF file"));
+      };
+      
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+    
+    // For Word documents (docx)
+    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        mammoth.extractRawText({arrayBuffer: e.target.result})
+          .then(result => {
+            resolve(result.value);
+          })
+          .catch(err => {
+            reject(new Error("Failed to extract Word document text: " + err.message));
+          });
+      };
+      
+      reader.onerror = function() {
+        reject(new Error("Failed to read Word file"));
+      };
+      
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+    
+    // For any other file type, try to read as text
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      try {
+        resolve(e.target.result);
+      } catch (error) {
+        reject(new Error("Unsupported file format"));
+      }
+    };
+    
+    reader.onerror = function() {
+      reject(new Error("Failed to read file"));
+    };
+    
+    reader.readAsText(file);
+  });
+}
 
   // Remove a document from the uploaded documents array
   function removeDocument(filename) {

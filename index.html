@@ -193,7 +193,7 @@
       </div>
     </header>
 
-    <!-- Search Container with AI button removed -->
+    <!-- Search Container and AI Modal remain the same -->
     <div id="search-container" class="search-container" style="display: none;">
       <div class="search-icon">
         <i class="fas fa-search"></i>
@@ -204,6 +204,10 @@
         placeholder="Search in any field..." 
         class="search-input"
       >
+      <div id="ai-search" class="ai-search-btn">
+        <i class="fas fa-robot"></i>
+        <span>AI Search</span>
+      </div>
     </div>
     
     <div id="results-count" class="results-count" style="display: none;">Showing 0 items</div>
@@ -289,6 +293,10 @@
     </div>
   </div>
   
+  <!-- No need for JSZip, using simple text file download -->
+  <script src="script.js"></script>
+</body>
+</html>
   <!-- No need for JSZip, using simple text file download -->
   <script src="script.js"></script>
 </body>

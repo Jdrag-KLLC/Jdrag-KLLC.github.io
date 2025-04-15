@@ -118,6 +118,31 @@
       cursor: pointer;
       color: #ff5555;
     }
+    /* Download button styles */
+    .download-btn {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .download-btn:hover {
+      background-color: #3e8e41;
+    }
+    .download-btn i {
+      font-size: 16px;
+    }
+    .actions-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
     /* Helper for small screens */
     @media (max-width: 768px) {
       #content-wrapper {
@@ -239,6 +264,13 @@
                 <button id="clear-documents" class="btn primary-btn" style="background-color: #ff5555;"><i class="fas fa-trash"></i></button>
               </div>
             </div>
+            
+            <!-- New Download Chat Button -->
+            <div class="actions-container">
+              <button id="download-chat" class="download-btn">
+                <i class="fas fa-download"></i> Download Chat History
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -261,6 +293,7 @@
     </div>
   </div>
   
+  <!-- No need for JSZip, using simple text file download -->
   <script src="script.js"></script>
 </body>
 </html>

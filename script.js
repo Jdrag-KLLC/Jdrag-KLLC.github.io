@@ -357,9 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // --- UPDATED FILE UPLOAD AND PARSING FUNCTIONS ---
-  
-  // Updated file upload handler remains the same.
+  // RAG Implementation - Handle file upload
   async function handleFileUpload(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -374,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       try {
-        // Use the updated file reading function
+        // Read the file text
         const text = await readFileAsText(file);
         
         // Store the document information
@@ -427,80 +425,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Updated file reading function.
-  // This function now checks the file type and uses:
-  // - FileReader for text files,
-  // - PDF.js for PDF files,
-  // - Mammoth.js for DOCX files.
+  // Read a file and return its contents as text
   function readFileAsText(file) {
     return new Promise((resolve, reject) => {
-      // If the file is a plain text (or similar) file, use FileReader as before.
-      if (file.type.startsWith("text/") || file.name.match(/\.(txt|csv|json)$/i)) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          resolve(e.target.result);
-        };
-        reader.onerror = function() {
-          reject(new Error("Failed to read file"));
-        };
-        reader.readAsText(file);
-      }
-      // Handle PDF files using PDF.js
-      else if (file.type === "application/pdf" || file.name.match(/\.(pdf)$/i)) {
-        file.arrayBuffer().then(function(buffer) {
-          const uint8Array = new Uint8Array(buffer);
-          pdfjsLib.getDocument({ data: uint8Array }).promise.then(function(pdf) {
-            let maxPages = pdf.numPages;
-            let countPromises = [];
-            for (let i = 1; i <= maxPages; i++) {
-              let pagePromise = pdf.getPage(i).then(function(page) {
-                return page.getTextContent().then(function(textContent) {
-                  let pageText = textContent.items.map(function(item) {
-                    return item.str;
-                  }).join(" ");
-                  return pageText;
-                });
-              });
-              countPromises.push(pagePromise);
-            }
-            Promise.all(countPromises).then(function(texts) {
-              resolve(texts.join("\n"));
-            }).catch(function(err) {
-              reject(new Error("Failed to extract text from PDF: " + err.message));
-            });
-          }).catch(function(err) {
-            reject(new Error("Failed to load PDF: " + err.message));
-          });
-        }).catch(function(err) {
-          reject(new Error("Failed to read file as array buffer: " + err.message));
-        });
-      }
-      // Handle DOCX files using Mammoth.js
-      else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-               file.name.match(/\.(docx)$/i)) {
-        file.arrayBuffer().then(function(buffer) {
-          mammoth.extractRawText({ arrayBuffer: buffer })
-          .then(function(result) {
-            resolve(result.value);
-          })
-          .catch(function(err) {
-            reject(new Error("Failed to extract text from DOCX: " + err.message));
-          });
-        }).catch(function(err) {
-          reject(new Error("Failed to read file as array buffer: " + err.message));
-        });
-      }
-      // Fallback: attempt to read the file as text
-      else {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          resolve(e.target.result);
-        };
-        reader.onerror = function() {
-          reject(new Error("Failed to read file as text (fallback)"));
-        };
-        reader.readAsText(file);
-      }
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        resolve(e.target.result);
+      };
+      
+      reader.onerror = function(e) {
+        reject(new Error("Failed to read file"));
+      };
+      
+      // Read the file as text
+      reader.readAsText(file);
     });
   }
 
@@ -573,7 +512,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Create prompt with context
-      const fullPrompt = `You are an assistant helping with questions about a specific record ${documentTexts.length > 0 ? 'and uploaded documents' : ''}. 
+      const fullPrompt = `You are an assistant helping with questions about a specific record ${
+        documentTexts.length > 0 ? 'and uploaded documents' : ''
+      }. 
       
 ${context}
 

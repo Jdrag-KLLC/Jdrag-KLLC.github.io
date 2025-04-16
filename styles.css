@@ -121,17 +121,15 @@ header p {
 .search-container {
   position: relative;
   margin-bottom: 24px;
-  display: flex;
-  align-items: center;
+  width: 100%;
 }
 
 .search-icon {
   position: absolute;
   left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 12px; /* Use fixed pixel value instead of percentage */
   color: var(--text-secondary);
-  z-index: 1; /* Add this line */
+  pointer-events: none; /* Make it non-interactive */
 }
 
 .search-input {

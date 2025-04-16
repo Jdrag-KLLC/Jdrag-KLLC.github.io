@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const errorTextElement = document.getElementById('error-text');
   const titlesContainer = document.getElementById('titles-container');
   const detailData = document.getElementById('detail-data');
-  const aiSearchBtn = document.getElementById('ai-search');
   const aiModal = document.getElementById('ai-modal');
   const closeModal = document.querySelector('.close-modal');
   const aiPromptInput = document.getElementById('ai-prompt');
@@ -45,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set up event listeners
   connectBtn.addEventListener('click', connectToSheet);
   searchInput.addEventListener('input', renderFilteredData);
-  aiSearchBtn.addEventListener('click', openAiModal);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
 

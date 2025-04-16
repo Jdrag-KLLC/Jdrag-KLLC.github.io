@@ -275,7 +275,6 @@ header p {
 /* Title List (Left Panel) */
 .titles-container {
   width: 30%;
-  max-height: 100vh;
   height: auto;
   overflow-y: auto;
   border-right: 1px solid var(--border-color);

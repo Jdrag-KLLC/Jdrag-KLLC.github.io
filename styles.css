@@ -24,6 +24,7 @@ body {
   line-height: 1.6;
   color: var(--text-color);
   background-color: var(--background-color);
+  font-size: 14px; /* Reduced from default 16px */
 }
 
 .container {
@@ -39,7 +40,7 @@ header {
 }
 
 header h1 {
-  font-size: 32px;
+  font-size: 28px; /* Reduced from 32px */
   font-weight: 500;
   color: var(--primary-color);
   margin-bottom: 8px;
@@ -54,7 +55,7 @@ header h1 i {
 
 header p {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
   margin-bottom: 24px;
 }
 
@@ -66,8 +67,8 @@ header p {
 
 .input-control {
   flex: 1;
-  padding: 12px 16px;
-  font-size: 16px;
+  padding: 10px 14px; /* Reduced from 12px 16px */
+  font-size: 14px; /* Reduced from 16px */
   border: 1px solid var(--border-color);
   border-radius: 4px 0 0 4px;
   outline: none;
@@ -80,8 +81,8 @@ header p {
 }
 
 .btn {
-  padding: 12px 20px;
-  font-size: 16px;
+  padding: 10px 16px; /* Reduced from 12px 20px */
+  font-size: 14px; /* Reduced from 16px */
   font-weight: 500;
   border: none;
   border-radius: 4px;
@@ -107,7 +108,7 @@ header p {
 }
 
 .helper-text {
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   color: var(--text-secondary);
   margin-top: 8px;
   text-align: left;
@@ -132,8 +133,8 @@ header p {
 
 .search-input {
   width: 100%;
-  padding: 14px 14px 14px 40px;
-  font-size: 16px;
+  padding: 12px 12px 12px 36px; /* Adjusted padding */
+  font-size: 14px; /* Reduced from 16px */
   border: 1px solid var(--border-color);
   border-radius: 8px;
   outline: none;
@@ -147,7 +148,7 @@ header p {
 
 .results-count {
   margin-bottom: 16px;
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   color: var(--text-secondary);
 }
 
@@ -177,6 +178,7 @@ header p {
 
 .loading-container p {
   color: var(--text-secondary);
+  font-size: 14px; /* Added font size */
 }
 
 /* Error message */
@@ -198,6 +200,7 @@ header p {
 
 .error-container p {
   color: var(--error-color);
+  font-size: 14px; /* Added font size */
 }
 
 /* Two-panel layout using flex */
@@ -238,12 +241,13 @@ header p {
 
 /* Title List (Left Panel) */
 .title-item {
-  padding: 12px 8px;
+  padding: 10px 8px; /* Reduced from 12px 8px */
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 14px; /* Added font size */
 }
 
 .title-item:hover {
@@ -258,6 +262,7 @@ header p {
   color: var(--primary-color);
   text-decoration: none;
   padding: 4px 0;
+  font-size: 14px; /* Added font size */
 }
 
 .title-link:hover {
@@ -275,12 +280,13 @@ header p {
 .data-label {
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
 }
 
 .data-value {
   color: var(--text-color);
   word-break: break-word;
+  font-size: 14px; /* Added font size */
 }
 
 .data-value a {
@@ -298,7 +304,7 @@ header p {
   color: var(--primary-color);
   padding: 4px 8px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   margin-right: 6px;
   margin-bottom: 6px;
 }
@@ -325,6 +331,7 @@ header p {
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  font-size: 14px; /* Added font size */
 }
 
 /* RAG dropdown container */
@@ -336,23 +343,24 @@ header p {
 }
 
 .rag-dropdown .dropdown-header {
-  padding: 12px;
+  padding: 10px; /* Reduced from 12px */
   cursor: pointer;
   background-color: var(--surface-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 14px; /* Added font size */
 }
 
 .rag-dropdown .dropdown-content {
-  padding: 12px;
+  padding: 10px; /* Reduced from 12px */
   background-color: var(--surface-color);
 }
 
 /* File upload area */
 .file-upload-area {
   border: 2px dashed #ccc;
-  padding: 20px;
+  padding: 16px; /* Reduced from 20px */
   text-align: center;
   margin-bottom: 16px;
   border-radius: 8px;
@@ -362,7 +370,7 @@ header p {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 400px;
+  height: 360px; /* Reduced from 400px */
 }
 
 .chat-messages {
@@ -370,16 +378,17 @@ header p {
   overflow-y: auto;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 12px; /* Reduced from 16px */
+  margin-bottom: 12px; /* Reduced from 16px */
   background-color: #f9f9f9;
 }
 
 .message {
-  margin-bottom: 12px;
-  padding: 8px 12px;
+  margin-bottom: 10px; /* Reduced from 12px */
+  padding: 6px 10px; /* Reduced from 8px 12px */
   border-radius: 16px;
   max-width: 80%;
+  font-size: 13px; /* Added smaller font size */
 }
 
 .user-message {
@@ -400,14 +409,15 @@ header p {
 
 .chat-input {
   flex: 1;
-  padding: 12px;
+  padding: 10px; /* Reduced from 12px */
   border: 1px solid #ccc;
   border-radius: 8px;
+  font-size: 13px; /* Added smaller font size */
 }
 
 /* File list styles */
 .file-list {
-  margin-top: 12px;
+  margin-top: 10px; /* Reduced from 12px */
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -415,12 +425,12 @@ header p {
 
 .file-item {
   background-color: #f0f0f0;
-  padding: 6px 12px;
+  padding: 4px 10px; /* Reduced from 6px 12px */
   border-radius: 16px;
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px; /* Reduced from 8px */
 }
 
 .file-item i {
@@ -430,17 +440,17 @@ header p {
 
 /* Download button styles */
 .download-btn {
-  padding: 8px 16px;
+  padding: 6px 14px; /* Reduced from 8px 16px */
   background-color: #4CAF50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-top: 8px;
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px; /* Reduced from 8px */
 }
 
 .download-btn:hover {
@@ -448,7 +458,7 @@ header p {
 }
 
 .download-btn i {
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
 }
 
 .actions-container {

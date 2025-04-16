@@ -9,161 +9,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Basic container styles */
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    /* Two-panel layout using flex */
-    #content-wrapper {
-      display: flex;
-      margin-top: 16px;
-      height: calc(125vh - 250px); /* Adjust based on your header size */
-      min-height: 350px;
-      width: 100%;
-      overflow: hidden;
-    }
-    /* Left Panel (Titles List) */
-    #titles-container {
-      flex: 0 0 350px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-      padding-right: 16px;
-      margin-right: 16px;
-      height: 100%;
-    }
-    /* Right Panel (Detail View) */
-    #detail-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      height: 100%;
-      overflow-y: auto;
-    }
-    /* Dynamic detail data area */
-    #detail-data {
-      flex: 1;
-      margin-bottom: 20px;
-    }
-    /* RAG dropdown container */
-    .rag-dropdown {
-      width: 100%;
-    }
-    /* File upload area */
-    .file-upload-area {
-      border: 2px dashed #ccc;
-      padding:.20px;
-      text-align: center;
-      margin-bottom: 16px;
-      border-radius: 8px;
-    }
-    /* Chat container */
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 400px;
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-      background-color: #f9f9f9;
-    }
-    .message {
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      border-radius: 16px;
-      max-width: 80%;
-    }
-    .user-message {
-      background-color: #DCF8C6;
-      align-self: flex-end;
-      margin-left: auto;
-    }
-    .ai-message {
-      background-color: #ECECEC;
-      align-self: flex-start;
-    }
-    .chat-input-container {
-      display: flex;
-      gap: 8px;
-    }
-    .chat-input {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    /* File list styles */
-    .file-list {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .file-item {
-      background-color: #f0f0f0;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .file-item i {
-      cursor: pointer;
-      color: #ff5555;
-    }
-    /* Download button styles */
-    .download-btn {
-      padding: 8px 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 8px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .download-btn:hover {
-      background-color: #3e8e41;
-    }
-    .download-btn i {
-      font-size: 16px;
-    }
-    .actions-container {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-    /* Helper for small screens */
-    @media (max-width: 768px) {
-      #content-wrapper {
-        flex-direction: column;
-        height: auto;
-      }
-      #titles-container {
-        flex: 0 0 auto;
-        max-height: 300px;
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #ccc;
-        padding-right: 0;
-        margin-right: 0;
-        padding-bottom: 16px;
-        margin-bottom: 16px;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="container">
@@ -184,7 +29,7 @@
       </div>
       
       <!-- Container for Gemini API Key input -->
-      <div id="gemini-api-container" style="margin-top: 20px;">
+      <div id="gemini-api-container">
         <div class="input-group">
           <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key here" class="input-control">
           <button id="set-gemini-api-key" class="btn primary-btn">Set API Key</button>
@@ -237,7 +82,7 @@
           <div class="dropdown-header">
             Ask Questions <i class="fas fa-chevron-down"></i>
           </div>
-          <div class="dropdown-content" style="display: none;">
+          <div class="dropdown-content">
             <div class="file-upload-area" id="file-upload-area">
               <input type="file" id="document-upload" multiple style="display: none;">
               <button id="upload-trigger" class="btn primary-btn"><i class="fas fa-cloud-upload-alt"></i> Upload Documents</button>
@@ -257,7 +102,7 @@
               <div class="chat-input-container">
                 <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about this record...">
                 <button id="send-question" class="btn primary-btn"><i class="fas fa-paper-plane"></i></button>
-                <button id="clear-documents" class="btn primary-btn" style="background-color: #ff5555;"><i class="fas fa-trash"></i></button>
+                <button id="clear-documents" class="btn primary-btn clear-btn"><i class="fas fa-trash"></i></button>
               </div>
             </div>
             

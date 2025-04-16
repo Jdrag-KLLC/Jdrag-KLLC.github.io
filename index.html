@@ -133,6 +133,25 @@
       const contentWrapper = document.getElementById('content-wrapper');
       const appHeader = document.getElementById('app-header');
       
+      // Adding event listener for the dropdown
+      const dropdownHeader = document.querySelector('.dropdown-header');
+      const dropdownContent = document.querySelector('.dropdown-content');
+      
+      dropdownHeader.addEventListener('click', function() {
+        if (dropdownContent.style.display === 'none') {
+          dropdownContent.style.display = 'block';
+        } else {
+          dropdownContent.style.display = 'none';
+        }
+        
+        // Toggle the chevron icon
+        const chevron = dropdownHeader.querySelector('i.fa-chevron-down');
+        if (chevron) {
+          chevron.classList.toggle('fa-chevron-down');
+          chevron.classList.toggle('fa-chevron-up');
+        }
+      });
+      
       // Function to check if both inputs are set
       function checkInputsAndAdjustUI() {
         const sheetIdSet = localStorage.getItem('sheetId');
@@ -172,6 +191,16 @@
           checkInputsAndAdjustUI();
         }
       });
+      
+      // File upload trigger
+      const uploadTrigger = document.getElementById('upload-trigger');
+      const documentUpload = document.getElementById('document-upload');
+      
+      if (uploadTrigger && documentUpload) {
+        uploadTrigger.addEventListener('click', function() {
+          documentUpload.click();
+        });
+      }
     });
   </script>
 </body>

@@ -69,10 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
     geminiApiKey = geminiApiKeyInput.value.trim();
     if (geminiApiKey) {
       alert('Gemini API key set.');
-      // Add these lines to hide the input value
-      geminiApiKeyInput.value = ''; // Clear the input
-      geminiApiKeyInput.type = 'password'; // Change to password type
-      geminiApiKeyInput.placeholder = 'API key saved (hidden)';
+      // Hide the entire Gemini API container like the sheet id container
+      document.getElementById('gemini-api-container').style.display = 'none';
     } else {
       alert('Please enter a valid Gemini API key.');
     }
@@ -234,19 +232,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Format special fields (e.g., URLs, priority, tags)
   function renderSpecialFields(header, value) {
-    if (!value) return '';
+  if (!value) return '';
   
-    const valueStr = String(value);
-    const urlPattern = /^(https?:\/\/[^\s]+)$/;
+  const valueStr = String(value);
+  const urlPattern = /^(https?:\/\/[^\s]+)$/;
   
-    // Check for line breaks and preserve them
-    if (valueStr.includes('\n')) {
-      return valueStr.split('\n').map(line => escapeHtml(line)).join('<br>');
-    }
+  if (urlPattern.test(valueStr)) {
+    return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
+  }
   
-    if (urlPattern.test(valueStr)) {
-      return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
-    }
+  // Simple newline to <br> conversion without splitting and joining
+  if (valueStr.includes('\n')) {
+    return escapeHtml(valueStr).replace(/\n/g, '<br>');
+  }
     
     const headerLower = header.toLowerCase();
     if (headerLower === 'priority') {

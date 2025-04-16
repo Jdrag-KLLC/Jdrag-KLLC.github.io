@@ -9,165 +9,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.0/mammoth.browser.min.js"></script>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Basic container styles */
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    /* Two-panel layout using flex */
-    #content-wrapper {
-      display: flex;
-      margin-top: 16px;
-      height: calc(100vh - 250px); /* Adjust based on your header size */
-      min-height: 350px;
-      width: 100%;
-      overflow: hidden;
-    }
-    /* Left Panel (Titles List) */
-    #titles-container {
-      flex: 0 0 350px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-      padding-right: 16px;
-      margin-right: 16px;
-      height: 100%;
-    }
-    /* Right Panel (Detail View) */
-    #detail-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      height: 100%;
-      overflow-y: auto;
-    }
-    /* Dynamic detail data area */
-    #detail-data {
-      flex: 1;
-      margin-bottom: 20px;
-    }
-    /* RAG dropdown container */
-    .rag-dropdown {
-      width: 100%;
-    }
-    /* File upload area */
-    .file-upload-area {
-      border: 2px dashed #ccc;
-      padding:.20px;
-      text-align: center;
-      margin-bottom: 16px;
-      border-radius: 8px;
-    }
-    /* Chat container */
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 400px;
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-      background-color: #f9f9f9;
-    }
-    .message {
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      border-radius: 16px;
-      max-width: 80%;
-    }
-    .user-message {
-      background-color: #DCF8C6;
-      align-self: flex-end;
-      margin-left: auto;
-    }
-    .ai-message {
-      background-color: #ECECEC;
-      align-self: flex-start;
-    }
-    .chat-input-container {
-      display: flex;
-      gap: 8px;
-    }
-    .chat-input {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    /* File list styles */
-    .file-list {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .file-item {
-      background-color: #f0f0f0;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .file-item i {
-      cursor: pointer;
-      color: #ff5555;
-    }
-    /* Download button styles */
-    .download-btn {
-      padding: 8px 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 8px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .download-btn:hover {
-      background-color: #3e8e41;
-    }
-    .download-btn i {
-      font-size: 16px;
-    }
-    .actions-container {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-    /* Helper for small screens */
-    @media (max-width: 768px) {
-      #content-wrapper {
-        flex-direction: column;
-        height: auto;
-      }
-      #titles-container {
-        flex: 0 0 auto;
-        max-height: 300px;
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #ccc;
-        padding-right: 0;
-        margin-right: 0;
-        padding-bottom: 16px;
-        margin-bottom: 16px;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="container">
-    <header>
+    <header id="app-header">
       <h1><i class="fas fa-database"></i> Google Sheet Data Viewer</h1>
       <p>Interactive viewer for your spreadsheet data</p>
       
@@ -195,7 +40,7 @@
       </div>
     </header>
 
-    <!-- Search Container and AI Modal remain the same -->
+    <!-- Search Container without AI search -->
     <div id="search-container" class="search-container" style="display: none;">
       <div class="search-icon">
         <i class="fas fa-search"></i>
@@ -206,10 +51,6 @@
         placeholder="Search in any field..." 
         class="search-input"
       >
-      <div id="ai-search" class="ai-search-btn">
-        <i class="fas fa-robot"></i>
-        <span>AI Search</span>
-      </div>
     </div>
     
     <div id="results-count" class="results-count" style="display: none;">Showing 0 items</div>
@@ -238,7 +79,7 @@
           <!-- Detail content goes here -->
         </div>
         
-        <!-- RAG Document Interaction - replaces PDF Dropdown -->
+        <!-- RAG Document Interaction -->
         <div class="rag-dropdown">
           <div class="dropdown-header">
             Ask Questions <i class="fas fa-chevron-down"></i>
@@ -267,7 +108,7 @@
               </div>
             </div>
             
-            <!-- New Download Chat Button -->
+            <!-- Download Chat Button -->
             <div class="actions-container">
               <button id="download-chat" class="download-btn">
                 <i class="fas fa-download"></i> Download Chat History
@@ -277,25 +118,61 @@
         </div>
       </div>
     </div>
-    
-    <div id="ai-modal" class="modal">
-      <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2><i class="fas fa-robot"></i> AI-Powered Search</h2>
-        <p>Describe what you're looking for in natural language:</p>
-        <textarea id="ai-prompt" rows="4" placeholder="E.g., 'Explain how AI works'"></textarea>
-        <div class="modal-footer">
-          <button id="run-ai-search" class="btn primary-btn">Search</button>
-        </div>
-        <div id="ai-results" class="ai-results" style="display: none;">
-          <h3>AI Search Results</h3>
-          <div id="ai-results-content"></div>
-        </div>
-      </div>
-    </div>
   </div>
   
-  <!-- No need for JSZip, using simple text file download -->
   <script src="script.js"></script>
+  
+  <!-- Additional script for handling the inputs disappearing -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const connectBtn = document.getElementById('connect-btn');
+      const setApiKeyBtn = document.getElementById('set-gemini-api-key');
+      const apiKeyContainer = document.getElementById('api-key-container');
+      const geminiApiContainer = document.getElementById('gemini-api-container');
+      const searchContainer = document.getElementById('search-container');
+      const contentWrapper = document.getElementById('content-wrapper');
+      const appHeader = document.getElementById('app-header');
+      
+      // Function to check if both inputs are set
+      function checkInputsAndAdjustUI() {
+        const sheetIdSet = localStorage.getItem('sheetId');
+        const apiKeySet = localStorage.getItem('geminiApiKey');
+        
+        if (sheetIdSet && apiKeySet) {
+          // Hide input containers
+          apiKeyContainer.style.display = 'none';
+          geminiApiContainer.style.display = 'none';
+          
+          // Show search and adjust header
+          searchContainer.style.display = 'block';
+          appHeader.style.marginBottom = '16px';
+          
+          // Adjust content wrapper height for more space
+          contentWrapper.style.height = 'calc(100vh - 150px)';
+        }
+      }
+      
+      // Check on page load
+      checkInputsAndAdjustUI();
+      
+      // Connect button click handler
+      connectBtn.addEventListener('click', function() {
+        const sheetId = document.getElementById('sheet-id').value.trim();
+        if (sheetId) {
+          localStorage.setItem('sheetId', sheetId);
+          checkInputsAndAdjustUI();
+        }
+      });
+      
+      // Set API key button click handler
+      setApiKeyBtn.addEventListener('click', function() {
+        const apiKey = document.getElementById('gemini-api-key').value.trim();
+        if (apiKey) {
+          localStorage.setItem('geminiApiKey', apiKey);
+          checkInputsAndAdjustUI();
+        }
+      });
+    });
+  </script>
 </body>
 </html>

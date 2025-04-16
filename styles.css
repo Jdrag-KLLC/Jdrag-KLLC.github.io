@@ -136,9 +136,9 @@ header p {
 .search-icon {
   position: absolute;
   left: 14px;
-  top: 12px; /* Use fixed pixel value instead of percentage */
+  top: 12px;
   color: var(--text-secondary);
-  pointer-events: none; /* Make it non-interactive */
+  pointer-events: none;
 }
 
 .search-input {
@@ -240,10 +240,10 @@ header p {
 #content-wrapper {
   display: flex;
   margin-top: 16px;
-  height: auto; /* Adjust based on your header size */
+  height: auto; 
   min-height: 350px;
   width: 100%;
-  overflow: hidden;
+  overflow: visible; 
 }
 
 /* Left Panel (Titles List) */
@@ -253,7 +253,8 @@ header p {
   border-right: 1px solid #ccc;
   padding-right: 16px;
   margin-right: 16px;
-  height: 100%;
+  height: auto; 
+  min-height: 100%;
 }
 
 /* Right Panel (Detail View) */
@@ -272,7 +273,6 @@ header p {
   margin-bottom: 20px;
 }
 
-/* Title List (Left Panel) */
 .titles-container {
   width: 30%;
   height: auto;
@@ -409,8 +409,8 @@ header p {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: auto; /* Change from 400px to auto */
-  min-height: 200px; /* Add this line to ensure minimum height */
+  height: auto; 
+  min-height: 200px; 
 }
 
 .chat-messages {

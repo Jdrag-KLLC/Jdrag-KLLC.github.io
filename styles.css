@@ -240,7 +240,7 @@ header p {
 #content-wrapper {
   display: flex;
   margin-top: 16px;
-  height: calc(125vh - 250px); /* Adjust based on your header size */
+  height: auto; /* Adjust based on your header size */
   min-height: 350px;
   width: 100%;
   overflow: hidden;
@@ -262,7 +262,7 @@ header p {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  height: auto;
   overflow-y: auto;
 }
 
@@ -275,7 +275,8 @@ header p {
 /* Title List (Left Panel) */
 .titles-container {
   width: 30%;
-  max-height: 125vh;
+  max-height: 100vh;
+  height: auto;
   overflow-y: auto;
   border-right: 1px solid var(--border-color);
   padding-right: 8px;
@@ -409,7 +410,8 @@ header p {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 400px;
+  height: auto; /* Change from 400px to auto */
+  min-height: 200px; /* Add this line to ensure minimum height */
 }
 
 .chat-messages {

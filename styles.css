@@ -235,7 +235,7 @@ header p {
 
 .titles-container {
   width: 30%;
-  max-height: 70vh;
+  max-height: 150vh;
   overflow-y: auto;
   border-right: 1px solid var(--border-color);
   padding-right: 8px;

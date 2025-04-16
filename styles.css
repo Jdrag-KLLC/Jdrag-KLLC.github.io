@@ -24,6 +24,7 @@ body {
   line-height: 1.6;
   color: var(--text-color);
   background-color: var(--background-color);
+  font-size: 0.9rem;
 }
 
 .container {
@@ -132,7 +133,7 @@ header p {
 
 .search-input {
   width: 100%;
-  padding: 14px 110px 14px 40px;
+  padding: 14px 14px 14px 40px;
   font-size: 16px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -277,7 +278,7 @@ header p {
 .data-grid {
   display: grid;
   grid-template-columns: 1fr 3fr;
-  gap: 7px;
+  gap: 4px;
   padding: 20px;
 }
 

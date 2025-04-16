@@ -124,7 +124,7 @@ header p {
 }
 
 .search-icon {
-  position: relative;
+  position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);

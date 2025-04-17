@@ -40,18 +40,37 @@
       </div>
     </header>
 
-    <!-- Search Container and AI Modal remain the same -->
-    <div id="search-container" class="search-container" style="display: none;">
-      <div class="search-icon">
-        <i class="fas fa-search"></i>
+    <!-- View Opportunities Toggle Button -->
+    <button id="view-opportunities-btn" class="view-opportunities-btn" style="display: none;">
+      <i class="fas fa-list"></i> View Opportunities
+    </button>
+    
+    <!-- The popout panel containing search and titles -->
+    <div id="popout-panel" class="popout-panel popout-open">
+      <!-- Search Container -->
+      <div id="search-container" class="search-container" style="display: none;">
+        <div class="search-icon">
+          <i class="fas fa-search"></i>
+        </div>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Search in any field..." 
+          class="search-input"
+        >
+        <div id="results-count" class="results-count" style="display: none;">Showing 0 items</div>
       </div>
-      <input 
-        type="text" 
-        id="search-input" 
-        placeholder="Search in any field..." 
-        class="search-input"
-      >
-    <div id="results-count" class="results-count" style="display: none;">Showing 0 items</div>
+      
+      <!-- Close popout button -->
+      <div class="close-popout">
+        <i class="fas fa-times"></i>
+      </div>
+      
+      <!-- Left Panel: Scrollable Titles List -->
+      <div id="titles-container" class="titles-container">
+        <!-- Titles will be dynamically inserted here -->
+      </div>
+    </div>
     
     <div id="loading" class="loading-container" style="display: none;">
       <div class="loading-spinner"></div>
@@ -63,13 +82,8 @@
       <p id="error-text"></p>
     </div>
     
-    <!-- Two-panel layout -->
+    <!-- Content wrapper - now the right panel becomes full width when popout is closed -->
     <div id="content-wrapper">
-      <!-- Left Panel: Scrollable Titles List -->
-      <div id="titles-container" class="titles-container">
-        <!-- Titles will be dynamically inserted here -->
-      </div>
-      
       <!-- Right Panel: Detail View -->
       <div id="detail-content" class="detail-content">
         <!-- Dynamic detail data will be inserted here -->
@@ -134,7 +148,6 @@
     </div>
   </div>
   
-  <!-- No need for JSZip, using simple text file download -->
   <script src="script.js"></script>
 </body>
 </html>

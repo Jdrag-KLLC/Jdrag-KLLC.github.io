@@ -97,13 +97,10 @@
             Ask Questions <i class="fas fa-chevron-down"></i>
           </div>
           <div class="dropdown-content">
-            <div class="file-upload-area" id="file-upload-area">
-              <input type="file" id="document-upload" multiple style="display: none;">
-              <button id="upload-trigger" class="btn primary-btn"><i class="fas fa-cloud-upload-alt"></i> Upload Documents</button>
-              <p class="text-center">Upload files that are relevant to this record</p>
-              <div class="file-list" id="file-list">
-                <!-- Uploaded files will appear here -->
-              </div>
+            <div class="file-upload-area">
+              <p>Drag and drop files here or click to browse</p>
+              <input type="file" id="file-upload" multiple accept=".pdf,.doc,.docx,.txt">
+              <p class="rag-helper-text">Upload files that are relevant to your question for better context</p>
             </div>
             
             <div class="chat-container">

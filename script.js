@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const geminiApiKeyInput = document.getElementById('gemini-api-key');
   const setGeminiApiKeyBtn = document.getElementById('set-gemini-api-key');
 
+  // New popout panel elements
+  const viewOpportunitiesBtn = document.getElementById('view-opportunities-btn');
+  const popoutPanel = document.getElementById('popout-panel');
+  const closePopout = document.querySelector('.close-popout');
+
   // Other existing DOM elements
   const apiKeyContainer = document.getElementById('api-key-container');
   const searchContainer = document.getElementById('search-container');
@@ -46,6 +51,10 @@ document.addEventListener('DOMContentLoaded', function() {
   searchInput.addEventListener('input', renderFilteredData);
   closeModal.addEventListener('click', closeAiModal);
   runAiSearchBtn.addEventListener('click', performAiSearch);
+
+  // Popout panel event listeners
+  viewOpportunitiesBtn.addEventListener('click', togglePopout);
+  closePopout.addEventListener('click', closePopoutPanel);
 
   // RAG-related event listeners
   uploadTrigger.addEventListener('click', function() {
@@ -91,6 +100,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Function to toggle the popout panel
+  function togglePopout() {
+    if (popoutPanel.classList.contains('popout-closed')) {
+      popoutPanel.classList.remove('popout-closed');
+      popoutPanel.classList.add('popout-open');
+    } else {
+      closePopoutPanel();
+    }
+  }
+
+  // Function to close the popout panel
+  function closePopoutPanel() {
+    popoutPanel.classList.remove('popout-open');
+    popoutPanel.classList.add('popout-closed');
+  }
+
   // Connect to Google Sheet and fetch data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
@@ -124,6 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
       apiKeyContainer.style.display = 'none';
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
+      viewOpportunitiesBtn.style.display = 'flex'; // Show the toggle button after connection
       renderFilteredData();
       
     } catch (error) {
@@ -212,6 +238,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // When selecting a new item, clear documents and chat history
       clearDocuments();
+      
+      // Close the popout panel when a selection is made
+      closePopoutPanel();
     });
     
     return titleItem;
@@ -232,20 +261,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Format special fields (e.g., URLs, priority, tags)
   function renderSpecialFields(header, value) {
-  if (!value) return '';
-  
-  const valueStr = String(value);
-  const urlPattern = /^(https?:\/\/[^\s]+)$/;
-  
-  if (urlPattern.test(valueStr)) {
-    return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
-  }
-  
-  // Simple newline to <br> conversion without splitting and joining
-  if (valueStr.includes('\n')) {
-    return escapeHtml(valueStr).replace(/\n/g, '<br>');
-  }
+    if (!value) return '';
     
+    const valueStr = String(value);
+    const urlPattern = /^(https?:\/\/[^\s]+)$/;
+    
+    if (urlPattern.test(valueStr)) {
+      return `<a href="${escapeHtml(valueStr)}" target="_blank">${escapeHtml(valueStr)}</a>`;
+    }
+    
+    // Simple newline to <br> conversion without splitting and joining
+    if (valueStr.includes('\n')) {
+      return escapeHtml(valueStr).replace(/\n/g, '<br>');
+    }
+      
     const headerLower = header.toLowerCase();
     if (headerLower === 'priority') {
       const priority = valueStr.toLowerCase();

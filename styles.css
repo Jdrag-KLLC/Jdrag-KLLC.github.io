@@ -253,7 +253,7 @@ header p {
   border-right: 1px solid #ccc;
   padding-right: 16px;
   margin-right: 16px;
-  height: 100%;
+  height: auto;
 }
 
 /* Right Panel (Detail View) */
@@ -275,7 +275,7 @@ header p {
 .titles-container {
   width: 30%;
   max-height: 200px;
-  height: 100%;
+  height: auto;
   overflow-y: auto;
   border-right: 1px solid var(--border-color);
   padding-right: 8px;

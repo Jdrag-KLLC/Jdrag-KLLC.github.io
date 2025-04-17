@@ -147,6 +147,7 @@ header p {
 .popout-panel {
   margin-bottom: 20px;
   overflow: hidden;
+  width: 100%;
 }
 
 .popout-open {
@@ -251,6 +252,7 @@ header p {
   border-right: 1px solid var(--border-color);
   padding-right: 16px;
   margin-right: 16px;
+  width: 100%;
 }
 
 /* Right Panel (Detail View) */
@@ -295,8 +297,9 @@ header p {
 /* Search bar */
 .search-container {
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   width: 100%;
+  padding: 0 12px;
 }
 
 .search-icon {
@@ -347,10 +350,12 @@ header p {
   margin-right: 6px;
 }
 
+/* Results count styling */
 .results-count {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   font-size: 14px;
   color: var(--text-secondary);
+  padding: 0 12px;
 }
 
 /* Loading spinner */
@@ -387,13 +392,15 @@ header p {
   color: var(--error-color);
 }
 
+/* Title item styling */
 .title-item {
-  padding: 12px 8px;
+  padding: 12px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .title-item:hover {
@@ -417,9 +424,9 @@ header p {
 /* Data grid layout */
 .data-grid {
   display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 8px 14px;
-  padding: 14px;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 12px;
+  padding: 12px;
   background-color: var(--surface-color);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -813,6 +820,24 @@ header p {
   font-weight: bold;
 }
 
+/* Custom scrollbar for titles container */
+#titles-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+#titles-container::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+#titles-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+#titles-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .container {
@@ -860,5 +885,13 @@ header p {
   
   #api-key-container .btn {
     border-radius: 4px;
+  }
+  
+  .search-container {
+    padding: 0 8px;
+  }
+  
+  .results-count {
+    padding: 0 8px;
   }
 }

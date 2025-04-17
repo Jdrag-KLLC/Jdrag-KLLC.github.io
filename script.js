@@ -91,6 +91,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+
+    // Function to sync the heights of the containers
+  function syncContainerHeights() {
+    const detailContent = document.getElementById('detail-content');
+    const titlesContainer = document.getElementById('titles-container');
+    if (detailContent && titlesContainer) {
+      const detailHeight = detailContent.offsetHeight;
+      titlesContainer.style.height = `${detailHeight}px`;
+    }
+  }
+
+    // Call it on initial load and when window resizes
+  window.addEventListener('resize', syncContainerHeights);
+
   // Connect to Google Sheet and fetch data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
@@ -125,6 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
       renderFilteredData();
+      setTimeout(syncContainerHeights, 100); // Give the DOM time to render
+  }
       
     } catch (error) {
       loadingElement.style.display = 'none';

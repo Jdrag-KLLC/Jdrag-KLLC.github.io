@@ -351,7 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
           data.candidates[0].content.parts.length > 0) {
         
         const responseText = data.candidates[0].content.parts[0].text;
-        aiResultsContent.innerHTML = `<p>${responseText}</p>`;
+        const formattedResponse = formatMarkdownResponse(responseText);
+        loadingMessageEl.innerHTML = formattedResponse;
       } else {
         aiResultsContent.innerHTML = '<p>No response text received from API.</p>';
         console.error('Unexpected API response structure:', data);
@@ -362,6 +363,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+
+// this function handles markdown formatting
+function formatMarkdownResponse(text) {
+  if (!text) return '';
+  
+  // Basic markdown formatting
+  const formatted = text
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    
+    // Bold
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    
+    // Italic
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    
+    // Lists
+    .replace(/^\s*\*\s(.*$)/gim, '<li>$1</li>')
+    .replace(/^\s*\d+\.\s(.*$)/gim, '<li>$1</li>')
+    
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank">$1</a>')
+    
+    // Code blocks
+    .replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>')
+    
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    
+    // Paragraphs (must come last)
+    .replace(/\n\s*\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  
+  // Wrap the content in paragraphs if it's not already wrapped
+  if (!formatted.startsWith('<h') && !formatted.startsWith('<p>')) {
+    return `<p>${formatted}</p>`;
+  }
+  
+  return formatted;
+}
+
+  
   // RAG Implementation - Handle file upload
 async function handleFileUpload(event) {
   const files = event.target.files;

@@ -317,7 +317,44 @@ document.addEventListener('DOMContentLoaded', function() {
     aiModal.style.display = 'none';
   }
 
-  // Perform an AI search using the Gemini API endpoint with context from the selected record (if any)
+  // Consolidated Gemini API request function
+  async function makeGeminiApiRequest(prompt, context = '') {
+    if (!geminiApiKey) {
+      throw new Error('Please set your Gemini API key.');
+    }
+
+    const fullPrompt = context ? `${context}\n\nAnswer the following question: ${prompt}` : prompt;
+    
+    const payload = {
+      contents: [{
+        parts: [{ text: fullPrompt }]
+      }]
+    };
+    
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    
+    throw new Error('No response text received from API');
+  }
+
+  // Modified performAiSearch function
   async function performAiSearch() {
     const aiPrompt = aiPromptInput.value.trim();
     if (!aiPrompt) return;
@@ -325,118 +362,143 @@ document.addEventListener('DOMContentLoaded', function() {
     aiResultsContent.innerHTML = '<div class="loading-spinner"></div>';
     aiResults.style.display = 'block';
     
-    if (!geminiApiKey) {
-      aiResultsContent.innerHTML = '<p>Please set your Gemini API key.</p>';
-      return;
-    }
-    
-    // Build a context string from the currently selected row (if available)
-    let contextText = "";
-    if (currentSelectedRow) {
-      contextText = "Record Information:\n";
-      for (const header of sheetData.headers) {
-        if (currentSelectedRow[header]) {
-          contextText += `${header}: ${currentSelectedRow[header]}\n`;
+    try {
+      let context = '';
+      if (currentSelectedRow) {
+        context = "Record Information:\n";
+        for (const header of sheetData.headers) {
+          if (currentSelectedRow[header]) {
+            context += `${header}: ${currentSelectedRow[header]}\n`;
+          }
         }
       }
-    }
-    
-    // Combine the context with the user query.
-    // If a record is selected, instruct the API to answer based on that record.
-    let fullPrompt = aiPrompt;
-    if (contextText) {
-      fullPrompt = `Based on the following record information:\n${contextText}\nAnswer the following question: ${aiPrompt}`;
-    }
-    
-    // Build the payload to match the Gemini API request sample
-    const payload = {
-      contents: [{
-        parts: [{ text: fullPrompt }]
-      }]
-    };
-    
-    // Construct the URL with the user-supplied Gemini API key
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-    
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
       
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Extract text content from Gemini API response
-      if (data.candidates && data.candidates.length > 0 && 
-          data.candidates[0].content && 
-          data.candidates[0].content.parts && 
-          data.candidates[0].content.parts.length > 0) {
-        
-        const responseText = data.candidates[0].content.parts[0].text;
-        aiResultsContent.innerHTML = `<p>${responseText}</p>`;
-      } else {
-        aiResultsContent.innerHTML = '<p>No response text received from API.</p>';
-        console.error('Unexpected API response structure:', data);
-      }
+      const responseText = await makeGeminiApiRequest(aiPrompt, context);
+      aiResultsContent.innerHTML = `<p>${responseText}</p>`;
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       aiResultsContent.innerHTML = `<p>Error: ${error.message}. Please try again later.</p>`;
     }
   }
 
-  // RAG Implementation - Handle file upload
-async function handleFileUpload(event) {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
-  
-  // Add a processing message
-  const processingMessage = document.createElement('div');
-  processingMessage.className = 'message ai-message';
-  processingMessage.textContent = 'Processing files...';
-  chatMessages.appendChild(processingMessage);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  
-  let successCount = 0;
-  let failCount = 0;
-  
-  // Define supported file types
-  const supportedTypes = [
-    'text/plain', 
-    'application/pdf', 
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-    'text/csv', 
-    'application/json'
-  ];
-  
-  try {
-    // Process each file sequentially to avoid memory issues
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      processingMessage.textContent = `Processing file ${i+1} of ${files.length}: ${file.name}`;
+  // Modified sendQuestion function
+  async function sendQuestion() {
+    const question = chatInput.value.trim();
+    if (!question) return;
+    
+    chatInput.value = '';
+    
+    const userMessageEl = document.createElement('div');
+    userMessageEl.className = 'message user-message';
+    userMessageEl.textContent = question;
+    chatMessages.appendChild(userMessageEl);
+    
+    const loadingMessageEl = document.createElement('div');
+    loadingMessageEl.className = 'message ai-message';
+    loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
+    chatMessages.appendChild(loadingMessageEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    try {
+      let context = '';
       
-      // Check if file is already uploaded
-      if (uploadedDocuments.some(doc => doc.name === file.name)) {
-        failCount++;
-        continue; // Skip duplicates
+      if (currentSelectedRow) {
+        context += "RECORD INFORMATION:\n";
+        for (const header of sheetData.headers) {
+          if (currentSelectedRow[header]) {
+            context += `${header}: ${currentSelectedRow[header]}\n`;
+          }
+        }
+        context += "\n";
       }
       
-      // Warning for unsupported file types
-      if (!supportedTypes.includes(file.type) && !file.type.includes('text/')) {
-        console.warn(`File ${file.name} has type "${file.type}" which may not be fully supported.`);
+      if (documentTexts.length > 0) {
+        context += "DOCUMENT CONTENT:\n";
+        documentTexts.forEach((text, index) => {
+          context += `Document ${index + 1}: ${text}\n\n`;
+        });
       }
       
+      const fullPrompt = `You are an assistant helping with questions about a specific record ${
+        documentTexts.length > 0 ? 'and uploaded documents' : ''
+      }. 
+      
+${context}
+
+Based on the provided information, answer the following question:
+${question}
+
+Format your response using markdown (include headings with #, lists with *, bold with **, italic with *, code with \`\`\`, etc.)
+If the answer includes tables, format them using markdown tables.
+Only provide information found in the record or uploaded documents. If the answer is not in the provided information, say "I don't have enough information to answer that question."`;
+      
+      const responseText = await makeGeminiApiRequest(fullPrompt);
+      loadingMessageEl.innerHTML = markdownToHtml(responseText);
+    } catch (error) {
+      console.error('Error calling Gemini API for RAG:', error);
+      loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
+    }
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Consolidated file type processing
+  const fileProcessors = {
+    'application/pdf': async (file) => {
+      const typedArray = new Uint8Array(await readFileAsArrayBuffer(file));
+      const pdf = await pdfjsLib.getDocument({data: typedArray}).promise;
+      let textContent = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        textContent += content.items.map(item => item.str).join(' ') + ' ';
+      }
+      return textContent;
+    },
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': async (file) => {
+      const arrayBuffer = await readFileAsArrayBuffer(file);
+      const result = await mammoth.extractRawText({arrayBuffer});
+      return result.value;
+    }
+  };
+
+  // Helper function to read file as ArrayBuffer
+  function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = e => reject(new Error('Failed to read file'));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // Modified handleFileUpload function
+  async function handleFileUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const processingMessage = document.createElement('div');
+    processingMessage.className = 'message ai-message';
+    processingMessage.textContent = 'Processing files...';
+    chatMessages.appendChild(processingMessage);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const file of files) {
       try {
-        // Read the file text
-        const text = await readFileAsText(file);
+        if (uploadedDocuments.some(doc => doc.name === file.name)) {
+          failCount++;
+          continue;
+        }
         
-        // Store the document information
+        let text;
+        if (fileProcessors[file.type]) {
+          text = await fileProcessors[file.type](file);
+        } else {
+          text = await readFileAsText(file);
+        }
+        
         uploadedDocuments.push({
           name: file.name,
           type: file.type,
@@ -444,195 +506,178 @@ async function handleFileUpload(event) {
           text: text
         });
         
-        // Extract the document text for RAG
         documentTexts.push(text);
-        
-        // Create a file item in the UI
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-          <span>${escapeHtml(file.name)}</span>
-          <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
-        `;
-        
-        // Add click handler for remove icon
-        fileItem.querySelector('i').addEventListener('click', function() {
-          const filename = this.getAttribute('data-filename');
-          removeDocument(filename);
-          fileItem.remove();
-        });
-        
-        fileList.appendChild(fileItem);
+        createFileItem(file);
         successCount++;
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
         failCount++;
-        
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'message ai-message';
-        errorMessage.textContent = `Error processing file ${file.name}: ${error.message}`;
-        chatMessages.appendChild(errorMessage);
       }
     }
-  } catch (err) {
-    console.error('Error in file upload process:', err);
-    processingMessage.textContent = `Error in upload process: ${err.message}`;
-  }
-  
-  // Reset the file input to allow uploading the same file again
-  event.target.value = '';
-  
-  // Update the processing message
-  if (successCount > 0 || failCount > 0) {
-    processingMessage.textContent = `Processing complete: ${successCount} file(s) successfully processed, ${failCount} file(s) failed.`;
-  } else {
-    processingMessage.textContent = 'No files were processed.';
-  }
-  
-  // Add a confirmation message if documents were successfully uploaded
-  if (successCount > 0) {
-    const message = document.createElement('div');
-    message.className = 'message ai-message';
-    message.textContent = `You can now ask questions about the uploaded documents.`;
-    chatMessages.appendChild(message);
-  }
-  
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Read a file and return its contents as text based on file type
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    // For text files, use FileReader directly
-    if (file.type === 'text/plain' || file.type === 'text/csv' || file.type === 'application/json' || file.type.includes('text/')) {
-      const reader = new FileReader();
-      
-      reader.onload = function(e) {
-        resolve(e.target.result);
-      };
-      
-      reader.onerror = function(e) {
-        reject(new Error("Failed to read text file"));
-      };
-      
-      reader.readAsText(file);
-      return;
-    }
     
-    // For PDF files
-    if (file.type === 'application/pdf') {
-      const reader = new FileReader();
+    updateProcessingMessage(processingMessage, successCount, failCount);
+    event.target.value = '';
+  }
+
+  // Helper function to create file item
+  function createFileItem(file) {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+    fileItem.innerHTML = `
+      <span>${escapeHtml(file.name)}</span>
+      <i class="fas fa-times" data-filename="${escapeHtml(file.name)}"></i>
+    `;
+    
+    fileItem.querySelector('i').addEventListener('click', function() {
+      removeDocument(this.getAttribute('data-filename'));
+      fileItem.remove();
+    });
+    
+    fileList.appendChild(fileItem);
+  }
+
+  // Helper function to update processing message
+  function updateProcessingMessage(message, successCount, failCount) {
+    if (successCount > 0 || failCount > 0) {
+      message.textContent = `Processing complete: ${successCount} file(s) successfully processed, ${failCount} file(s) failed.`;
+    } else {
+      message.textContent = 'No files were processed.';
+    }
+  }
+
+  // Read a file and return its contents as text based on file type
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      // For text files, use FileReader directly
+      if (file.type === 'text/plain' || file.type === 'text/csv' || file.type === 'application/json' || file.type.includes('text/')) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          resolve(e.target.result);
+        };
+        
+        reader.onerror = function(e) {
+          reject(new Error("Failed to read text file"));
+        };
+        
+        reader.readAsText(file);
+        return;
+      }
       
-      reader.onload = function(e) {
-        const typedArray = new Uint8Array(e.target.result);
+      // For PDF files
+      if (file.type === 'application/pdf') {
+        const reader = new FileReader();
         
-        // Make sure pdfjsLib is available
-        if (typeof pdfjsLib === 'undefined') {
-          reject(new Error("PDF.js library not loaded"));
-          return;
-        }
-        
-        // Load the PDF with proper error handling
-        pdfjsLib.getDocument({data: typedArray}).promise
-          .then(pdf => {
-            let textContent = '';
-            const numPages = pdf.numPages;
-            let loadedPages = 0;
-            
-            // For small PDFs, just extract sequentially to avoid memory issues
-            const extractPage = (pageNum) => {
-              if (pageNum > numPages) {
-                resolve(textContent);
-                return;
-              }
+        reader.onload = function(e) {
+          const typedArray = new Uint8Array(e.target.result);
+          
+          // Make sure pdfjsLib is available
+          if (typeof pdfjsLib === 'undefined') {
+            reject(new Error("PDF.js library not loaded"));
+            return;
+          }
+          
+          // Load the PDF with proper error handling
+          pdfjsLib.getDocument({data: typedArray}).promise
+            .then(pdf => {
+              let textContent = '';
+              const numPages = pdf.numPages;
+              let loadedPages = 0;
               
-              pdf.getPage(pageNum).then(page => {
-                page.getTextContent().then(content => {
-                  // Concatenate the text items
-                  content.items.forEach(item => {
-                    textContent += item.str + ' ';
+              // For small PDFs, just extract sequentially to avoid memory issues
+              const extractPage = (pageNum) => {
+                if (pageNum > numPages) {
+                  resolve(textContent);
+                  return;
+                }
+                
+                pdf.getPage(pageNum).then(page => {
+                  page.getTextContent().then(content => {
+                    // Concatenate the text items
+                    content.items.forEach(item => {
+                      textContent += item.str + ' ';
+                    });
+                    
+                    loadedPages++;
+                    processingMessage.textContent = `Processing PDF: page ${loadedPages}/${numPages}`;
+                    
+                    // Process next page or resolve if done
+                    extractPage(pageNum + 1);
+                  }).catch(err => {
+                    console.error(`Error extracting text from page ${pageNum}:`, err);
+                    // Continue with next page despite errors
+                    extractPage(pageNum + 1);
                   });
-                  
-                  loadedPages++;
-                  processingMessage.textContent = `Processing PDF: page ${loadedPages}/${numPages}`;
-                  
-                  // Process next page or resolve if done
-                  extractPage(pageNum + 1);
                 }).catch(err => {
-                  console.error(`Error extracting text from page ${pageNum}:`, err);
+                  console.error(`Error getting page ${pageNum}:`, err);
                   // Continue with next page despite errors
                   extractPage(pageNum + 1);
                 });
-              }).catch(err => {
-                console.error(`Error getting page ${pageNum}:`, err);
-                // Continue with next page despite errors
-                extractPage(pageNum + 1);
-              });
-            };
-            
-            // Start extracting from page 1
-            extractPage(1);
-          })
-          .catch(err => reject(new Error("Failed to load PDF: " + err.message)));
-      };
+              };
+              
+              // Start extracting from page 1
+              extractPage(1);
+            })
+            .catch(err => reject(new Error("Failed to load PDF: " + err.message)));
+        };
+        
+        reader.onerror = function() {
+          reject(new Error("Failed to read PDF file"));
+        };
+        
+        reader.readAsArrayBuffer(file);
+        return;
+      }
       
-      reader.onerror = function() {
-        reject(new Error("Failed to read PDF file"));
-      };
+      // For Word documents (docx)
+      if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          // Make sure mammoth is available
+          if (typeof mammoth === 'undefined') {
+            reject(new Error("Mammoth.js library not loaded"));
+            return;
+          }
+          
+          mammoth.extractRawText({arrayBuffer: e.target.result})
+            .then(result => {
+              resolve(result.value);
+            })
+            .catch(err => {
+              reject(new Error("Failed to extract Word document text: " + err.message));
+            });
+        };
+        
+        reader.onerror = function() {
+          reject(new Error("Failed to read Word file"));
+        };
+        
+        reader.readAsArrayBuffer(file);
+        return;
+      }
       
-      reader.readAsArrayBuffer(file);
-      return;
-    }
-    
-    // For Word documents (docx)
-    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      // For any other file type, try to read as text
       const reader = new FileReader();
       
       reader.onload = function(e) {
-        // Make sure mammoth is available
-        if (typeof mammoth === 'undefined') {
-          reject(new Error("Mammoth.js library not loaded"));
-          return;
+        try {
+          resolve(e.target.result);
+        } catch (error) {
+          reject(new Error("Unsupported file format"));
         }
-        
-        mammoth.extractRawText({arrayBuffer: e.target.result})
-          .then(result => {
-            resolve(result.value);
-          })
-          .catch(err => {
-            reject(new Error("Failed to extract Word document text: " + err.message));
-          });
       };
       
       reader.onerror = function() {
-        reject(new Error("Failed to read Word file"));
+        reject(new Error("Failed to read file"));
       };
       
-      reader.readAsArrayBuffer(file);
-      return;
-    }
-    
-    // For any other file type, try to read as text
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-      try {
-        resolve(e.target.result);
-      } catch (error) {
-        reject(new Error("Unsupported file format"));
-      }
-    };
-    
-    reader.onerror = function() {
-      reject(new Error("Failed to read file"));
-    };
-    
-    reader.readAsText(file);
-  });
-}
+      reader.readAsText(file);
+    });
+  }
 
-// Global reference to processing message element for updating during long operations
-let processingMessage = null;
+  // Global reference to processing message element for updating during long operations
+  let processingMessage = null;
 
   // Remove a document from the uploaded documents array
   function removeDocument(filename) {
@@ -652,116 +697,6 @@ let processingMessage = null;
     chatMessages.innerHTML = '<div class="message ai-message">Upload documents and ask questions about this record. I\'ll use the documents to provide detailed answers.</div>';
   }
 
-  // Send a question to the Gemini API using RAG context
-async function sendQuestion() {
-  const question = chatInput.value.trim();
-  if (!question) return;
-  
-  // Clear the input field
-  chatInput.value = '';
-  
-  // Add the user's question to the chat
-  const userMessageEl = document.createElement('div');
-  userMessageEl.className = 'message user-message';
-  userMessageEl.textContent = question;
-  chatMessages.appendChild(userMessageEl);
-  
-  // Add a loading message
-  const loadingMessageEl = document.createElement('div');
-  loadingMessageEl.className = 'message ai-message';
-  loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
-  chatMessages.appendChild(loadingMessageEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  
-  // Check if there's a Gemini API key
-  if (!geminiApiKey) {
-    loadingMessageEl.innerHTML = 'Please set your Gemini API key.';
-    return;
-  }
-  
-  try {
-    // Build context from uploaded documents and selected row data
-    let context = '';
-    
-    // Add row data if available
-    if (currentSelectedRow) {
-      context += "RECORD INFORMATION:\n";
-      for (const header of sheetData.headers) {
-        if (currentSelectedRow[header]) {
-          context += `${header}: ${currentSelectedRow[header]}\n`;
-        }
-      }
-      context += "\n";
-    }
-    
-    // Add document content
-    if (documentTexts.length > 0) {
-      context += "DOCUMENT CONTENT:\n";
-      documentTexts.forEach((text, index) => {
-        context += `Document ${index + 1}: ${text}\n\n`;
-      });
-    }
-    
-    // Create prompt with context
-    const fullPrompt = `You are an assistant helping with questions about a specific record ${
-      documentTexts.length > 0 ? 'and uploaded documents' : ''
-    }. 
-    
-${context}
-
-Based on the provided information, answer the following question:
-${question}
-
-Format your response using markdown (include headings with #, lists with *, bold with **, italic with *, code with \`\`\`, etc.)
-If the answer includes tables, format them using markdown tables.
-Only provide information found in the record or uploaded documents. If the answer is not in the provided information, say "I don't have enough information to answer that question."`;
-    
-    // Build the payload for Gemini API
-    const payload = {
-      contents: [{
-        parts: [{ text: fullPrompt }]
-      }]
-    };
-    
-    // Construct the URL with the user-supplied Gemini API key
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Replace the loading message with the formatted response
-    if (data.candidates && data.candidates.length > 0 && 
-        data.candidates[0].content && 
-        data.candidates[0].content.parts && 
-        data.candidates[0].content.parts.length > 0) {
-      
-      const responseText = data.candidates[0].content.parts[0].text;
-      // Convert markdown to HTML and set as innerHTML
-      loadingMessageEl.innerHTML = markdownToHtml(responseText);
-    } else {
-      loadingMessageEl.textContent = 'No response received from API.';
-      console.error('Unexpected API response structure:', data);
-    }
-    
-  } catch (error) {
-    console.error('Error calling Gemini API for RAG:', error);
-    loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
-  }
-  
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-  
   // Function to download chat history as a text file
   function downloadChatHistory() {
     // Get all messages from the chat container
@@ -824,94 +759,94 @@ Only provide information found in the record or uploaded documents. If the answe
     else return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-    // Convert markdown text to HTML
-function markdownToHtml(markdown) {
-  if (!markdown) return '';
-  
-  // Process code blocks (```)
-  markdown = markdown.replace(/```(\w*)([\s\S]*?)```/g, function(match, language, code) {
-    return `<pre class="code-block${language ? ' language-' + language : ''}"><code>${escapeHtml(code.trim())}</code></pre>`;
-  });
-  
-  // Process inline code (`)
-  markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
-  
-  // Process headers (# Header)
-  markdown = markdown.replace(/^(#{1,6})\s+(.*?)$/gm, function(match, hashes, content) {
-    const level = hashes.length;
-    return `<h${level} class="md-heading">${content}</h${level}>`;
-  });
-  
-  // Process bold (**text**)
-  markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Process italic (*text*)
-  markdown = markdown.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Process unordered lists
-  markdown = markdown.replace(/^[\*\-]\s+(.*?)$/gm, '<li>$1</li>');
-  markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ul>$1</ul>');
-  
-  // Process ordered lists
-  markdown = markdown.replace(/^\d+\.\s+(.*?)$/gm, '<li>$1</li>');
-  markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ol>$1</ol>');
-  
-  // Process markdown tables
-  markdown = processMarkdownTables(markdown);
-  
-  // Process paragraphs and line breaks
-  markdown = markdown.replace(/\n\n/g, '</p><p>');
-  markdown = markdown.replace(/\n/g, '<br>');
-  
-  // Wrap in paragraph tags if not already wrapped
-  if (!markdown.startsWith('<')) {
-    markdown = `<p>${markdown}</p>`;
-  }
-  
-  return markdown;
-}
-
-// Helper function to process markdown tables
-function processMarkdownTables(markdown) {
-  // Find table blocks
-  const tableRegex = /\|(.+)\|\n\|(-+\|)+\n((?:\|.+\|\n)+)/g;
-  
-  return markdown.replace(tableRegex, function(match, headerRow, separator, bodyRows) {
-    // Process header row
-    const headers = headerRow.split('|')
-      .map(cell => cell.trim())
-      .filter(cell => cell !== '');
+  // Convert markdown text to HTML
+  function markdownToHtml(markdown) {
+    if (!markdown) return '';
     
-    // Process body rows
-    const rows = bodyRows.trim().split('\n').map(row => {
-      return row.split('|')
+    // Process code blocks (```)
+    markdown = markdown.replace(/```(\w*)([\s\S]*?)```/g, function(match, language, code) {
+      return `<pre class="code-block${language ? ' language-' + language : ''}"><code>${escapeHtml(code.trim())}</code></pre>`;
+    });
+    
+    // Process inline code (`)
+    markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Process headers (# Header)
+    markdown = markdown.replace(/^(#{1,6})\s+(.*?)$/gm, function(match, hashes, content) {
+      const level = hashes.length;
+      return `<h${level} class="md-heading">${content}</h${level}>`;
+    });
+    
+    // Process bold (**text**)
+    markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Process italic (*text*)
+    markdown = markdown.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Process unordered lists
+    markdown = markdown.replace(/^[\*\-]\s+(.*?)$/gm, '<li>$1</li>');
+    markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ul>$1</ul>');
+    
+    // Process ordered lists
+    markdown = markdown.replace(/^\d+\.\s+(.*?)$/gm, '<li>$1</li>');
+    markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ol>$1</ol>');
+    
+    // Process markdown tables
+    markdown = processMarkdownTables(markdown);
+    
+    // Process paragraphs and line breaks
+    markdown = markdown.replace(/\n\n/g, '</p><p>');
+    markdown = markdown.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!markdown.startsWith('<')) {
+      markdown = `<p>${markdown}</p>`;
+    }
+    
+    return markdown;
+  }
+
+  // Helper function to process markdown tables
+  function processMarkdownTables(markdown) {
+    // Find table blocks
+    const tableRegex = /\|(.+)\|\n\|(-+\|)+\n((?:\|.+\|\n)+)/g;
+    
+    return markdown.replace(tableRegex, function(match, headerRow, separator, bodyRows) {
+      // Process header row
+      const headers = headerRow.split('|')
         .map(cell => cell.trim())
         .filter(cell => cell !== '');
-    });
-    
-    // Build HTML table
-    let tableHtml = '<table class="md-table"><thead><tr>';
-    
-    // Add headers
-    headers.forEach(header => {
-      tableHtml += `<th>${escapeHtml(header)}</th>`;
-    });
-    
-    tableHtml += '</tr></thead><tbody>';
-    
-    // Add rows
-    rows.forEach(row => {
-      tableHtml += '<tr>';
-      row.forEach(cell => {
-        tableHtml += `<td>${escapeHtml(cell)}</td>`;
+      
+      // Process body rows
+      const rows = bodyRows.trim().split('\n').map(row => {
+        return row.split('|')
+          .map(cell => cell.trim())
+          .filter(cell => cell !== '');
       });
-      tableHtml += '</tr>';
+      
+      // Build HTML table
+      let tableHtml = '<table class="md-table"><thead><tr>';
+      
+      // Add headers
+      headers.forEach(header => {
+        tableHtml += `<th>${escapeHtml(header)}</th>`;
+      });
+      
+      tableHtml += '</tr></thead><tbody>';
+      
+      // Add rows
+      rows.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach(cell => {
+          tableHtml += `<td>${escapeHtml(cell)}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      
+      tableHtml += '</tbody></table>';
+      return tableHtml;
     });
-    
-    tableHtml += '</tbody></table>';
-    return tableHtml;
-  });
-}
+  }
   
   // Utility function to escape HTML special characters
   function escapeHtml(unsafe) {
@@ -923,4 +858,38 @@ function processMarkdownTables(markdown) {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
+
+  // Consolidated event listeners for modals and panels
+  function setupModalAndPanelListeners() {
+    // Modal close handlers
+    const modalCloseHandlers = {
+      'ai-modal': closeAiModal,
+      'popout-panel': closePopoutPanel
+    };
+
+    // Add click handlers for modal backgrounds
+    Object.keys(modalCloseHandlers).forEach(modalId => {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.addEventListener('click', function(event) {
+          if (event.target === modal) {
+            modalCloseHandlers[modalId]();
+          }
+        });
+      }
+    });
+
+    // Add close button handlers
+    document.querySelectorAll('.close-modal, .close-popout').forEach(closeBtn => {
+      closeBtn.addEventListener('click', function() {
+        const modalId = this.closest('.modal, .popout-panel').id;
+        if (modalCloseHandlers[modalId]) {
+          modalCloseHandlers[modalId]();
+        }
+      });
+    });
+  }
+
+  // Call the setup function after DOM is loaded
+  setupModalAndPanelListeners();
 });

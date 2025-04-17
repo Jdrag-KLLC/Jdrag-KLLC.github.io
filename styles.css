@@ -439,6 +439,62 @@ header p {
 .ai-message {
   background-color: #ECECEC;
   align-self: flex-start;
+  padding: 12px 16px;
+}
+
+.ai-message h1, .ai-message h2, .ai-message h3 {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.ai-message h1 {
+  font-size: 18px;
+}
+
+.ai-message h2 {
+  font-size: 16px;
+}
+
+.ai-message h3 {
+  font-size: 14px;
+}
+
+.ai-message pre {
+  background-color: #f1f1f1;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.ai-message code {
+  background-color: #f1f1f1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.ai-message ul, .ai-message ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.ai-message li {
+  margin-bottom: 4px;
+}
+
+.ai-message a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.ai-message a:hover {
+  text-decoration: underline;
+}
+
+.ai-message p {
+  margin-bottom: 8px;
 }
 
 .chat-input-container {

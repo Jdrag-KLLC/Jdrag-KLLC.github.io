@@ -421,6 +421,7 @@ header p {
   padding: 16px;
   margin-bottom: 16px;
   background-color: #f9f9f9;
+  max-height: 75vh;
 }
 
 .message {

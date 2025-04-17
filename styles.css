@@ -664,3 +664,82 @@ header p {
     border-radius: 4px;
   }
 }
+/* Markdown formatting styles */
+.message pre.code-block {
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-family: monospace;
+}
+
+.message code {
+  background: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.message h1, .message h2, .message h3, 
+.message h4, .message h5, .message h6 {
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.message h1 { font-size: 1.7em; }
+.message h2 { font-size: 1.5em; }
+.message h3 { font-size: 1.3em; }
+.message h4 { font-size: 1.2em; }
+.message h5 { font-size: 1.1em; }
+.message h6 { font-size: 1em; }
+
+.message ul, .message ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.message li {
+  margin: 4px 0;
+}
+
+.message table.md-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.message table.md-table th,
+.message table.md-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.message table.md-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.message table.md-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.message em {
+  font-style: italic;
+}
+
+.message strong {
+  font-weight: bold;
+}
+
+/* Ensure the AI message can grow to fit formatted content */
+.ai-message {
+  width: auto;
+  max-width: 90%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}

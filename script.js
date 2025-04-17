@@ -732,8 +732,70 @@ Only provide information found in the record or uploaded documents. If the answe
   
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+  
+  // Function to download chat history as a text file
+  function downloadChatHistory() {
+    // Get all messages from the chat container
+    const messages = document.querySelectorAll('#chat-messages .message');
+    if (messages.length === 0) {
+      alert('No chat messages to download.');
+      return;
+    }
+    
+    // Get the title of the current selected row for filename, or use a default
+    let titleForFilename = 'Untitled Entry';
+    if (currentSelectedRow) {
+      const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
+      titleForFilename = currentSelectedRow[titleField] || 'Untitled Entry';
+      // Clean up the title to make it suitable for a filename
+      titleForFilename = titleForFilename.replace(/[^\w\s-]/g, '').trim().substring(0, 50);
+    }
+    
+    // Format current date and time for the chat log
+    const now = new Date();
+    const dateString = now.toLocaleDateString();
+    const timeString = now.toLocaleTimeString();
+    
+    // Prepare the chat content with header
+    let chatContent = `Chat History for: ${titleForFilename}\n`;
+    chatContent += `Generated on: ${dateString} at ${timeString}\n\n`;
+    
+    // Process each message and add to content
+    messages.forEach((message, index) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const isUserMessage = message.classList.contains('user-message');
+      const sender = isUserMessage ? 'User' : 'AI Assistant';
+      chatContent += `[${index + 1}] ${sender} (${timestamp}):\n${message.textContent.trim()}\n\n`;
+    });
+    
+    // Create a list of uploaded documents if any
+    if (uploadedDocuments && uploadedDocuments.length > 0) {
+      chatContent += '\n--- Uploaded Documents ---\n';
+      uploadedDocuments.forEach((doc, index) => {
+        chatContent += `${index + 1}. ${doc.name} (${formatFileSize(doc.size)})\n`;
+      });
+    }
+    
+    // Create a Blob with the chat content
+    const blob = new Blob([chatContent], { type: 'text/plain' });
+    
+    // Create a download link and trigger the download
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = `${titleForFilename} chat results.txt`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
 
-  // Convert markdown text to HTML
+  // Helper function to format file size
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+    // Convert markdown text to HTML
 function markdownToHtml(markdown) {
   if (!markdown) return '';
   
@@ -822,68 +884,6 @@ function processMarkdownTables(markdown) {
   });
 }
   
-  // Function to download chat history as a text file
-  function downloadChatHistory() {
-    // Get all messages from the chat container
-    const messages = document.querySelectorAll('#chat-messages .message');
-    if (messages.length === 0) {
-      alert('No chat messages to download.');
-      return;
-    }
-    
-    // Get the title of the current selected row for filename, or use a default
-    let titleForFilename = 'Untitled Entry';
-    if (currentSelectedRow) {
-      const titleField = sheetData.headers.includes('Title') ? 'Title' : sheetData.headers[0];
-      titleForFilename = currentSelectedRow[titleField] || 'Untitled Entry';
-      // Clean up the title to make it suitable for a filename
-      titleForFilename = titleForFilename.replace(/[^\w\s-]/g, '').trim().substring(0, 50);
-    }
-    
-    // Format current date and time for the chat log
-    const now = new Date();
-    const dateString = now.toLocaleDateString();
-    const timeString = now.toLocaleTimeString();
-    
-    // Prepare the chat content with header
-    let chatContent = `Chat History for: ${titleForFilename}\n`;
-    chatContent += `Generated on: ${dateString} at ${timeString}\n\n`;
-    
-    // Process each message and add to content
-    messages.forEach((message, index) => {
-      const timestamp = new Date().toLocaleTimeString();
-      const isUserMessage = message.classList.contains('user-message');
-      const sender = isUserMessage ? 'User' : 'AI Assistant';
-      chatContent += `[${index + 1}] ${sender} (${timestamp}):\n${message.textContent.trim()}\n\n`;
-    });
-    
-    // Create a list of uploaded documents if any
-    if (uploadedDocuments && uploadedDocuments.length > 0) {
-      chatContent += '\n--- Uploaded Documents ---\n';
-      uploadedDocuments.forEach((doc, index) => {
-        chatContent += `${index + 1}. ${doc.name} (${formatFileSize(doc.size)})\n`;
-      });
-    }
-    
-    // Create a Blob with the chat content
-    const blob = new Blob([chatContent], { type: 'text/plain' });
-    
-    // Create a download link and trigger the download
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = `${titleForFilename} chat results.txt`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  }
-
-  // Helper function to format file size
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' bytes';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
-  }
-
   // Utility function to escape HTML special characters
   function escapeHtml(unsafe) {
     return unsafe

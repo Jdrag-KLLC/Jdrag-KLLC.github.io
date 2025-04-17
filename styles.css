@@ -417,9 +417,9 @@ header p {
 /* Data grid layout */
 .data-grid {
   display: grid;
-  grid-template-columns: 1fr 3fr;
-  gap: 8px 16px;
-  padding: 16px;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 12px;
+  padding: 12px;
   background-color: var(--surface-color);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -431,6 +431,7 @@ header p {
   font-size: 14px;
   padding: 4px 0;
   align-self: start;
+  min-width: 120px;
 }
 
 .data-value {
@@ -438,6 +439,7 @@ header p {
   word-break: break-word;
   padding: 4px 0;
   line-height: 1.4;
+  flex: 1;
 }
 
 .data-value a {
@@ -451,11 +453,24 @@ header p {
   text-decoration: underline;
 }
 
-/* Add a subtle separator between rows */
+/* Add separator at the top of each row */
+.data-grid > div:nth-child(odd) {
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+}
+
+/* Remove bottom borders */
 .data-grid > div:not(:nth-last-child(-n+2)) {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
-  margin-bottom: 4px;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* First row shouldn't have a top border */
+.data-grid > div:first-child,
+.data-grid > div:nth-child(2) {
+  border-top: none;
+  padding-top: 0;
 }
 
 /* Add hover effect for better interactivity */
@@ -473,21 +488,30 @@ header p {
   .data-grid {
     grid-template-columns: 1fr;
     gap: 4px;
-    padding: 12px;
+    padding: 8px;
   }
   
   .data-label {
     font-weight: 600;
     margin-bottom: 2px;
+    min-width: auto;
   }
   
   .data-value {
     margin-bottom: 8px;
   }
   
-  .data-grid > div:not(:nth-last-child(-n+2)) {
-    padding-bottom: 6px;
-    margin-bottom: 2px;
+  /* Adjust separators for mobile */
+  .data-grid > div:nth-child(odd) {
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+  
+  .data-grid > div:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
   }
 }
 
@@ -544,6 +568,17 @@ header p {
   padding: 12px;
   background-color: var(--surface-color);
   display: none;
+}
+
+/* RAG helper text */
+.rag-helper-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  text-align: center;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* File upload area */

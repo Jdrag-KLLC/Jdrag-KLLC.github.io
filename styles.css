@@ -148,9 +148,6 @@ header p {
   margin-bottom: 20px;
   overflow: hidden;
   width: 100%;
-  background-color: var(--surface-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 .popout-open {
@@ -249,7 +246,7 @@ header p {
 #titles-container {
   flex: 0 0 350px;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 12px;
   height: auto;
   max-height: 60vh;
   border-right: 1px solid var(--border-color);
@@ -268,9 +265,6 @@ header p {
   overflow-y: auto;
   padding-left: 16px;
   transition: margin-left 0.3s ease;
-  background-color: var(--surface-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 /* Dynamic detail data area */
@@ -303,7 +297,7 @@ header p {
 /* Search bar */
 .search-container {
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
   width: 100%;
   padding: 0 12px;
 }
@@ -358,7 +352,7 @@ header p {
 
 /* Results count styling */
 .results-count {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   font-size: 14px;
   color: var(--text-secondary);
   padding: 0 12px;
@@ -400,7 +394,7 @@ header p {
 
 /* Title item styling */
 .title-item {
-  padding: 8px 12px;
+  padding: 12px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   display: flex;
@@ -549,10 +543,6 @@ header p {
 /* RAG dropdown container */
 .rag-dropdown {
   width: 100%;
-  background-color: var(--surface-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  margin-top: 16px;
 }
 
 .rag-dropdown .dropdown-header {
@@ -903,10 +893,5 @@ header p {
   
   .results-count {
     padding: 0 8px;
-  }
-  
-  #detail-content {
-    padding-left: 0;
-    margin-top: 16px;
   }
 }

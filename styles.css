@@ -56,7 +56,7 @@ header h1 i {
 header p {
   color: var(--text-secondary);
   font-size: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
 .view-opportunities-btn {

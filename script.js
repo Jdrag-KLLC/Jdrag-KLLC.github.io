@@ -91,20 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-
-    // Function to sync the heights of the containers
-  function syncContainerHeights() {
-    const detailContent = document.getElementById('detail-content');
-    const titlesContainer = document.getElementById('titles-container');
-    if (detailContent && titlesContainer) {
-      const detailHeight = detailContent.offsetHeight;
-      titlesContainer.style.height = `${detailHeight}px`;
-    }
-  }
-
-    // Call it on initial load and when window resizes
-  window.addEventListener('resize', syncContainerHeights);
-
   // Connect to Google Sheet and fetch data
   async function connectToSheet() {
     const sheetId = sheetIdInput.value.trim();
@@ -139,8 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
       renderFilteredData();
-      setTimeout(syncContainerHeights, 100); // Give the DOM time to render
-  }
       
     } catch (error) {
       loadingElement.style.display = 'none';
@@ -367,8 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
           data.candidates[0].content.parts.length > 0) {
         
         const responseText = data.candidates[0].content.parts[0].text;
-        const formattedResponse = formatMarkdownResponse(responseText);
-        loadingMessageEl.innerHTML = formattedResponse;
+        aiResultsContent.innerHTML = `<p>${responseText}</p>`;
       } else {
         aiResultsContent.innerHTML = '<p>No response text received from API.</p>';
         console.error('Unexpected API response structure:', data);
@@ -379,50 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-
-// this function handles markdown formatting
-function formatMarkdownResponse(text) {
-  if (!text) return '';
-  
-  // Basic markdown formatting
-  const formatted = text
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    
-    // Bold
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    
-    // Italic
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    
-    // Lists
-    .replace(/^\s*\*\s(.*$)/gim, '<li>$1</li>')
-    .replace(/^\s*\d+\.\s(.*$)/gim, '<li>$1</li>')
-    
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank">$1</a>')
-    
-    // Code blocks
-    .replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>')
-    
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    
-    // Paragraphs (must come last)
-    .replace(/\n\s*\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-  
-  // Wrap the content in paragraphs if it's not already wrapped
-  if (!formatted.startsWith('<h') && !formatted.startsWith('<p>')) {
-    return `<p>${formatted}</p>`;
-  }
-  
-  return formatted;
-}
-
-  
   // RAG Implementation - Handle file upload
 async function handleFileUpload(event) {
   const files = event.target.files;

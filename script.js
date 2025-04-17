@@ -1,4 +1,37 @@
 document.addEventListener('DOMContentLoaded', function() {
+
+  //determines size of containers
+  const resizeObserver = new ResizeObserver(entries => {
+  for (let entry of entries) {
+    if (entry.target === detailContent) {
+      // Set the height of the titles container to match the detail content
+      const detailHeight = entry.contentRect.height;
+      titlesContainer.style.maxHeight = `${detailHeight}px`;
+    }
+  }
+});
+
+// Function to handle resize updates
+function updateContainerSizes() {
+  const detailContent = document.getElementById('detail-content');
+  const titlesContainer = document.getElementById('titles-container');
+  
+  // Initially set the height
+  titlesContainer.style.maxHeight = `${detailContent.offsetHeight}px`;
+  
+  // Observe changes to the detail content
+  resizeObserver.observe(detailContent);
+}
+
+// Call this function after data is loaded and DOM is updated
+function setupLayoutObservers() {
+  // Add a slight delay to ensure content is rendered
+  setTimeout(updateContainerSizes, 100);
+  
+  // Also update when window is resized
+  window.addEventListener('resize', updateContainerSizes);
+}
+  
   // DOM elements for Sheet integration and Gemini API key input
   const sheetIdInput = document.getElementById('sheet-id');
   const connectBtn = document.getElementById('connect-btn');
@@ -125,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
       searchContainer.style.display = 'block';
       resultsCount.style.display = 'block';
       renderFilteredData();
+      setupLayoutObservers();
       
     } catch (error) {
       loadingElement.style.display = 'none';
@@ -173,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
       filteredData.forEach((row, index) => {
         titlesContainer.appendChild(createTitleItem(row));
       });
-    }
+    setTimeout(updateContainerSizes, 100);}
   }
 
   // Create a clickable title item for each record

@@ -624,112 +624,204 @@ let processingMessage = null;
   }
 
   // Send a question to the Gemini API using RAG context
-  async function sendQuestion() {
-    const question = chatInput.value.trim();
-    if (!question) return;
+async function sendQuestion() {
+  const question = chatInput.value.trim();
+  if (!question) return;
+  
+  // Clear the input field
+  chatInput.value = '';
+  
+  // Add the user's question to the chat
+  const userMessageEl = document.createElement('div');
+  userMessageEl.className = 'message user-message';
+  userMessageEl.textContent = question;
+  chatMessages.appendChild(userMessageEl);
+  
+  // Add a loading message
+  const loadingMessageEl = document.createElement('div');
+  loadingMessageEl.className = 'message ai-message';
+  loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
+  chatMessages.appendChild(loadingMessageEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+  // Check if there's a Gemini API key
+  if (!geminiApiKey) {
+    loadingMessageEl.innerHTML = 'Please set your Gemini API key.';
+    return;
+  }
+  
+  try {
+    // Build context from uploaded documents and selected row data
+    let context = '';
     
-    // Clear the input field
-    chatInput.value = '';
-    
-    // Add the user's question to the chat
-    const userMessageEl = document.createElement('div');
-    userMessageEl.className = 'message user-message';
-    userMessageEl.textContent = question;
-    chatMessages.appendChild(userMessageEl);
-    
-    // Add a loading message
-    const loadingMessageEl = document.createElement('div');
-    loadingMessageEl.className = 'message ai-message';
-    loadingMessageEl.innerHTML = '<div class="loading-spinner" style="width: 24px; height: 24px; display: inline-block; margin-right: 8px;"></div> Processing...';
-    chatMessages.appendChild(loadingMessageEl);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    // Check if there's a Gemini API key
-    if (!geminiApiKey) {
-      loadingMessageEl.innerHTML = 'Please set your Gemini API key.';
-      return;
+    // Add row data if available
+    if (currentSelectedRow) {
+      context += "RECORD INFORMATION:\n";
+      for (const header of sheetData.headers) {
+        if (currentSelectedRow[header]) {
+          context += `${header}: ${currentSelectedRow[header]}\n`;
+        }
+      }
+      context += "\n";
     }
     
-    try {
-      // Build context from uploaded documents and selected row data
-      let context = '';
-      
-      // Add row data if available
-      if (currentSelectedRow) {
-        context += "RECORD INFORMATION:\n";
-        for (const header of sheetData.headers) {
-          if (currentSelectedRow[header]) {
-            context += `${header}: ${currentSelectedRow[header]}\n`;
-          }
-        }
-        context += "\n";
-      }
-      
-      // Add document content
-      if (documentTexts.length > 0) {
-        context += "DOCUMENT CONTENT:\n";
-        documentTexts.forEach((text, index) => {
-          context += `Document ${index + 1}: ${text}\n\n`;
-        });
-      }
-      
-      // Create prompt with context
-      const fullPrompt = `You are an assistant helping with questions about a specific record ${
-        documentTexts.length > 0 ? 'and uploaded documents' : ''
-      }. 
-      
+    // Add document content
+    if (documentTexts.length > 0) {
+      context += "DOCUMENT CONTENT:\n";
+      documentTexts.forEach((text, index) => {
+        context += `Document ${index + 1}: ${text}\n\n`;
+      });
+    }
+    
+    // Create prompt with context
+    const fullPrompt = `You are an assistant helping with questions about a specific record ${
+      documentTexts.length > 0 ? 'and uploaded documents' : ''
+    }. 
+    
 ${context}
 
 Based on the provided information, answer the following question:
 ${question}
 
+Format your response using markdown (include headings with #, lists with *, bold with **, italic with *, code with \`\`\`, etc.)
+If the answer includes tables, format them using markdown tables.
 Only provide information found in the record or uploaded documents. If the answer is not in the provided information, say "I don't have enough information to answer that question."`;
-      
-      // Build the payload for Gemini API
-      const payload = {
-        contents: [{
-          parts: [{ text: fullPrompt }]
-        }]
-      };
-      
-      // Construct the URL with the user-supplied Gemini API key
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Replace the loading message with the response
-      if (data.candidates && data.candidates.length > 0 && 
-          data.candidates[0].content && 
-          data.candidates[0].content.parts && 
-          data.candidates[0].content.parts.length > 0) {
-        
-        const responseText = data.candidates[0].content.parts[0].text;
-        loadingMessageEl.innerHTML = responseText;
-      } else {
-        loadingMessageEl.textContent = 'No response received from API.';
-        console.error('Unexpected API response structure:', data);
-      }
-      
-    } catch (error) {
-      console.error('Error calling Gemini API for RAG:', error);
-      loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
+    
+    // Build the payload for Gemini API
+    const payload = {
+      contents: [{
+        parts: [{ text: fullPrompt }]
+      }]
+    };
+    
+    // Construct the URL with the user-supplied Gemini API key
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
     }
     
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    const data = await response.json();
+    
+    // Replace the loading message with the formatted response
+    if (data.candidates && data.candidates.length > 0 && 
+        data.candidates[0].content && 
+        data.candidates[0].content.parts && 
+        data.candidates[0].content.parts.length > 0) {
+      
+      const responseText = data.candidates[0].content.parts[0].text;
+      // Convert markdown to HTML and set as innerHTML
+      loadingMessageEl.innerHTML = markdownToHtml(responseText);
+    } else {
+      loadingMessageEl.textContent = 'No response received from API.';
+      console.error('Unexpected API response structure:', data);
+    }
+    
+  } catch (error) {
+    console.error('Error calling Gemini API for RAG:', error);
+    loadingMessageEl.textContent = `Error: ${error.message}. Please try again later.`;
   }
+  
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
+  // Convert markdown text to HTML
+function markdownToHtml(markdown) {
+  if (!markdown) return '';
+  
+  // Process code blocks (```)
+  markdown = markdown.replace(/```(\w*)([\s\S]*?)```/g, function(match, language, code) {
+    return `<pre class="code-block${language ? ' language-' + language : ''}"><code>${escapeHtml(code.trim())}</code></pre>`;
+  });
+  
+  // Process inline code (`)
+  markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Process headers (# Header)
+  markdown = markdown.replace(/^(#{1,6})\s+(.*?)$/gm, function(match, hashes, content) {
+    const level = hashes.length;
+    return `<h${level} class="md-heading">${content}</h${level}>`;
+  });
+  
+  // Process bold (**text**)
+  markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Process italic (*text*)
+  markdown = markdown.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Process unordered lists
+  markdown = markdown.replace(/^[\*\-]\s+(.*?)$/gm, '<li>$1</li>');
+  markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ul>$1</ul>');
+  
+  // Process ordered lists
+  markdown = markdown.replace(/^\d+\.\s+(.*?)$/gm, '<li>$1</li>');
+  markdown = markdown.replace(/(<li>.*?<\/li>)(?=\n(?!<li>))/gs, '<ol>$1</ol>');
+  
+  // Process markdown tables
+  markdown = processMarkdownTables(markdown);
+  
+  // Process paragraphs and line breaks
+  markdown = markdown.replace(/\n\n/g, '</p><p>');
+  markdown = markdown.replace(/\n/g, '<br>');
+  
+  // Wrap in paragraph tags if not already wrapped
+  if (!markdown.startsWith('<')) {
+    markdown = `<p>${markdown}</p>`;
+  }
+  
+  return markdown;
+}
+
+// Helper function to process markdown tables
+function processMarkdownTables(markdown) {
+  // Find table blocks
+  const tableRegex = /\|(.+)\|\n\|(-+\|)+\n((?:\|.+\|\n)+)/g;
+  
+  return markdown.replace(tableRegex, function(match, headerRow, separator, bodyRows) {
+    // Process header row
+    const headers = headerRow.split('|')
+      .map(cell => cell.trim())
+      .filter(cell => cell !== '');
+    
+    // Process body rows
+    const rows = bodyRows.trim().split('\n').map(row => {
+      return row.split('|')
+        .map(cell => cell.trim())
+        .filter(cell => cell !== '');
+    });
+    
+    // Build HTML table
+    let tableHtml = '<table class="md-table"><thead><tr>';
+    
+    // Add headers
+    headers.forEach(header => {
+      tableHtml += `<th>${escapeHtml(header)}</th>`;
+    });
+    
+    tableHtml += '</tr></thead><tbody>';
+    
+    // Add rows
+    rows.forEach(row => {
+      tableHtml += '<tr>';
+      row.forEach(cell => {
+        tableHtml += `<td>${escapeHtml(cell)}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+    
+    tableHtml += '</tbody></table>';
+    return tableHtml;
+  });
+}
+  
   // Function to download chat history as a text file
   function downloadChatHistory() {
     // Get all messages from the chat container

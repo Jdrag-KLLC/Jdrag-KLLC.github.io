@@ -417,9 +417,9 @@ header p {
 /* Data grid layout */
 .data-grid {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 8px 12px;
-  padding: 12px;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 14px;
+  padding: 14px;
   background-color: var(--surface-color);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -454,16 +454,9 @@ header p {
 }
 
 /* Add separator at the top of each row */
-.data-grid > div:nth-child(odd) {
+.data-grid > div {
   border-top: 1px solid var(--border-color);
   padding-top: 8px;
-}
-
-/* Remove bottom borders */
-.data-grid > div:not(:nth-last-child(-n+2)) {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
 }
 
 /* First row shouldn't have a top border */
@@ -471,16 +464,6 @@ header p {
 .data-grid > div:nth-child(2) {
   border-top: none;
   padding-top: 0;
-}
-
-/* Add hover effect for better interactivity */
-.data-grid > div:hover {
-  background-color: rgba(66, 133, 244, 0.03);
-}
-
-/* Improve spacing for multi-line content */
-.data-value p {
-  margin: 4px 0;
 }
 
 /* Make the grid more compact on mobile */
@@ -502,7 +485,7 @@ header p {
   }
   
   /* Adjust separators for mobile */
-  .data-grid > div:nth-child(odd) {
+  .data-grid > div {
     border-top: 1px solid var(--border-color);
     padding-top: 8px;
     margin-top: 4px;

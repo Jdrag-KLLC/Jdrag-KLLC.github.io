@@ -1,19 +1,19 @@
-# Use a lightweight nginx image as base
-FROM nginx:alpine
+# Use a lightweight Node.js server image
+FROM node:18-alpine
 
-# Set working directory
-WORKDIR /usr/share/nginx/html
+# Create app directory
+WORKDIR /usr/src/app
 
-# Copy application files into the container
+# Install a simple HTTP server
+RUN npm install -g http-server
+
+# Copy application files
 COPY index.html .
 COPY script.js .
 COPY styles.css .
 
-# Configure nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Expose the port the app runs on
+EXPOSE 8080
 
-# Expose port 80
-EXPOSE 80
-
-# Start nginx when the container launches
-CMD ["nginx", "-g", "daemon off;"]
+# Command to run the app
+CMD ["http-server", "-p", "8080", "--cors"]

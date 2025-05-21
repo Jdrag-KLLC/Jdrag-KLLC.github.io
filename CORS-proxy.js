@@ -9,6 +9,9 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
+// Serve static files
+app.use(express.static('.'));
+
 // Define the proxy route
 app.get('/proxy', async (req, res) => {
   const url = req.query.url;
@@ -29,7 +32,7 @@ app.get('/proxy', async (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`CORS proxy server running on port ${PORT}`);
 });
 

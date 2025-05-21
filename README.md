@@ -65,6 +65,13 @@ This application includes a framework for AI integration. The current implementa
 - `styles.css` - All styling and visual customization
 - `script.js` - Application logic and data handling
 
+## Security
+
+Never embed API keys or other secrets directly in the client-side code.
+Store sensitive credentials in environment variables on the server and
+inject them during build or runtime. Exposing keys in the browser puts
+your accounts at risk.
+
 ## License
 
 MIT

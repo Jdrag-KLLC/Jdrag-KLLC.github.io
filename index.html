@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Sheet Data Viewer</title>
+  <title>Boom</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -13,8 +13,24 @@
 <body>
   <div class="container">
     <header>
-      <h1><i class="fas fa-database"></i> Google Sheet Data Viewer</h1>
-      <p>Interactive viewer for your spreadsheet data</p>
+      <h1><i class="fas fa-database"></i> Boom</h1>
+      <p>Automated Business Development Opportunity Identification, Routing, & Summarization</p>
+      
+      <!-- Navigation Buttons -->
+      <div class="nav-buttons">
+        <button id="all-opportunities-btn" class="nav-btn active">
+          <i class="fas fa-list"></i> All Opportunities
+        </button>
+        <button id="unread-btn" class="nav-btn">
+          <i class="fas fa-envelope"></i> Unread
+        </button>
+        <button id="undecided-btn" class="nav-btn">
+          <i class="fas fa-question-circle"></i> Undecided
+        </button>
+        <button id="dashboard-btn" class="nav-btn">
+          <i class="fas fa-star"></i> Favorites
+        </button>
+      </div>
       
       <!-- Container for Google Sheet ID and Connect Button -->
       <div id="api-key-container">
@@ -40,11 +56,6 @@
       </div>
     </header>
 
-    <!-- View Opportunities Toggle Button -->
-    <button id="view-opportunities-btn" class="view-opportunities-btn" style="display: none;">
-      <i class="fas fa-list"></i> View Opportunities
-    </button>
-    
     <!-- The popout panel containing search and titles -->
     <div id="popout-panel" class="popout-panel popout-open">
       <!-- Search Container -->
@@ -68,6 +79,11 @@
       
       <!-- Left Panel: Scrollable Titles List -->
       <div id="titles-container" class="titles-container">
+        <!-- Filter buttons -->
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="favorites">Favorites</button>
+        </div>
         <!-- Titles will be dynamically inserted here -->
       </div>
     </div>
@@ -84,6 +100,61 @@
     
     <!-- Content wrapper - now the right panel becomes full width when popout is closed -->
     <div id="content-wrapper">
+      <!-- Unread View -->
+      <div id="unread-view" class="unread-view" style="display: none;">
+        <div class="dashboard-header">
+          <h2><i class="fas fa-envelope"></i> Unread Opportunities</h2>
+          <div class="dashboard-stats">
+            <span class="stat-item">
+              <i class="fas fa-envelope"></i>
+              <span id="unread-count">0</span> Unread
+            </span>
+          </div>
+        </div>
+        <div id="unread-container">
+          <!-- Unread items will be displayed here -->
+        </div>
+      </div>
+
+      <!-- Add the undecided view container after the unread view -->
+      <div id="undecided-view" class="undecided-view" style="display: none;">
+        <div class="dashboard-header">
+          <h2><i class="fas fa-question-circle"></i> Undecided Opportunities</h2>
+          <div class="dashboard-stats">
+            <span class="stat-item">
+              <i class="fas fa-question-circle"></i>
+              <span id="undecided-count">0</span> Undecided
+            </span>
+          </div>
+        </div>
+        <div id="undecided-container"></div>
+      </div>
+
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="dashboard-view" style="display: none;">
+        <div class="dashboard-header">
+          <h2><i class="fas fa-star"></i> Favorited Opportunities</h2>
+          <div class="dashboard-stats">
+            <span class="stat-item">
+              <i class="fas fa-star"></i>
+              <span id="favorite-count">0</span> Favorites
+            </span>
+            <div class="sort-controls">
+              <select id="sort-by" class="sort-select">
+                <option value="date">Sort by Date</option>
+                <option value="score">Sort by Score</option>
+              </select>
+              <button id="sort-direction" class="sort-direction-btn" title="Toggle sort direction">
+                <i class="fas fa-sort-amount-down"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="favorites-container" class="favorites-container">
+          <!-- Favorited items will be displayed here -->
+        </div>
+      </div>
+
       <!-- Right Panel: Detail View -->
       <div id="detail-content" class="detail-content">
         <!-- Dynamic detail data will be inserted here -->

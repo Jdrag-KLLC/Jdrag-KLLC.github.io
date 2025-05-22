@@ -1,1 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheet RAG with Gemini</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- TensorFlow.js and Universal Sentence Encoder -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@latest/dist/universal-sentence-encoder.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Sheet RAG with Gemini</h1>
 
+        <div class="setup-section">
+            <h2>Setup</h2>
+            <label for="sheetId">Google Sheet ID:</label>
+            <input type="text" id="sheetId" placeholder="e.g., 1abcdefgHIJKLMNopqrsTUVwxyz_0123456789">
+            <small>Make sure your sheet is public ("Anyone with the link can view") or published to the web.</small>
+
+            <label for="sheetName">Sheet Name (or GID if only one sheet):</label>
+            <input type="text" id="sheetName" placeholder="e.g., Sheet1 or 0">
+            <small>If your sheet has only one tab, you can often use '0' as the GID. Otherwise, use the exact sheet name.</small>
+
+            <label for="geminiApiKey">Gemini API Key:</label>
+            <input type="password" id="geminiApiKey" placeholder="Enter your Gemini API Key">
+            <small>Your API key is used locally and not sent anywhere except to Google's Gemini API.</small>
+
+            <button id="loadDataBtn">Load Sheet Data & Build Index</button>
+            <p id="status"></p>
+        </div>
+
+        <div class="rag-section" style="display: none;">
+            <h2>Ask a Question</h2>
+            <textarea id="userQuery" placeholder="Ask something based on column C of your sheet..."></textarea>
+            <button id="askBtn">Ask Gemini</button>
+            <h3>Answer:</h3>
+            <div id="answer" class="answer-box"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
